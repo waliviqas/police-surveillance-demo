@@ -236,17 +236,8 @@
   .edge.live{stroke:url(#edgeGrad);stroke-width:2.4}
   .node circle.core{fill:#02182F;stroke:rgba(2,26,54,.55);stroke-width:1}
   .node circle.halo{fill:none;stroke:#02182F;stroke-width:2.8;opacity:0}
-  .readout{position:absolute;left:6vw;bottom:8vh;display:flex;gap:30px;flex-wrap:wrap;z-index:3;
-    padding:18px 28px;background:rgba(3,22,46,.58);border:1px solid rgba(200,232,255,.26);
-    border-radius:22px;
-    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-  .readout .k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
-  .readout .v{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(22px,2.4vw,34px);
-    letter-spacing:-.03em;color:var(--ink)}
-  .readout .v.cy{background:linear-gradient(120deg,var(--cy-300),var(--vi-400));
-    -webkit-background-clip:text;background-clip:text;color:transparent}
-  .beat{position:absolute;left:5vw;top:50%;max-width:min(440px,34vw);padding:34px 36px;z-index:3;opacity:0;
-    border-radius:28px}
+  .beat{position:absolute;left:6vw;top:50%;max-width:min(430px,32vw);padding:34px 38px;z-index:3;opacity:0;
+    border-radius:24px}
   .beat.glass::before{content:none}
   .beat h3{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(26px,3.1vw,46px);
     letter-spacing:-.035em;line-height:1.04;margin:0}
@@ -254,11 +245,11 @@
     -webkit-background-clip:text;background-clip:text;color:transparent}
   .beat p{color:var(--dim);font-size:15px;line-height:1.7}
   .beat p strong{color:var(--ink);font-weight:500}
-  .clock{position:absolute;right:6vw;top:16vh;text-align:right;z-index:3;
+  .clock{position:absolute;right:6vw;top:88px;text-align:right;z-index:3;
     padding:16px 26px;background:rgba(3,22,46,.58);border:1px solid rgba(200,232,255,.26);
-    border-radius:22px;
+    border-radius:24px;
     backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-  .clock .t{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(30px,4vw,64px);
+  .clock .t{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(24px,3.1vw,48px);font-variant-numeric:tabular-nums;
     letter-spacing:-.04em;line-height:1;color:var(--ink)}
   .clock .l{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-top:8px}
 
@@ -454,13 +445,11 @@
     </div>
 
     <div class="clock">
-      <div class="t" data-clock>14:32</div>
+      <div class="t" data-clock>14:32:00</div>
       <div class="l">Elapsed <span data-elapsed>0:00</span></div>
     </div>
 
-    <div class="readout">
-      <div><div class="k">Cameras reached</div><div class="v cy" data-reached>0</div></div>
-      <div><div class="k">Frontier</div><div class="v" data-frontier>0</div></div>
+<div class="v" data-frontier>0</div></div>
       <div><div class="k">Confidence</div><div class="v" data-conf>—</div></div>
     </div>
   </div>
@@ -1112,15 +1101,26 @@ void main(){
   var stageEls = {
     clock:    document.querySelector('[data-clock]'),
     elapsed:  document.querySelector('[data-elapsed]'),
-    reached:  document.querySelector('[data-reached]'),
-    frontier: document.querySelector('[data-frontier]'),
-    conf:     document.querySelector('[data-conf]')
+    dummy: null
   };
 
-  function mmss(sec){
-    var m = Math.floor(sec/60), s = Math.floor(sec%60);
-    return m + ':' + (s<10?'0':'') + s;
+  function two(n){ return (n<10?'0':'') + n; }
+  function mmss(sec){ return Math.floor(sec/60) + ':' + two(Math.floor(sec%60)); }
+
+  // 14:32:00 is the incident. Everything downstream is that plus elapsed.
+  var INCIDENT = 14*3600 + 32*60;
+  var clockBase = 0, clockAnchor = performance.now(), clockP = -1;
+  function paintClock(sec){
+    var t  = INCIDENT + sec;
+    var hh = Math.floor(t/3600) % 24, mm = Math.floor(t/60) % 60, ss = Math.floor(t) % 60;
+    stageEls.clock.textContent   = two(hh) + ':' + two(mm) + ':' + two(ss);
+    stageEls.elapsed.textContent = mmss(sec);
   }
+  // its own timer, because render only runs on scroll and pointer events
+  setInterval(function(){
+    if(!stageEls.clock) return;
+    paintClock(clockBase + (performance.now() - clockAnchor)/1000);
+  }, 200);
 
   var lastT1 = 0, lastT2 = -1;
   // perspective projection. Rotating a volume rather than tilting a plane is
@@ -1224,14 +1224,13 @@ void main(){
     trailCore.style.opacity = (lock*0.95).toFixed(2);
 
     // readouts
+    // Scroll sets where in the story we are; the clock then runs on from
+    // there in real seconds, so it behaves like a clock rather than a readout
+    // that only moves when you press a key.
     var elapsedSec = (phase2>0 ? 9*60 + phase2*11*60 : phase1*9*60);
-    stageEls.elapsed.textContent = mmss(elapsedSec);
-    var clockMin = 32 + Math.floor(elapsedSec/60);
-    stageEls.clock.textContent = '14:' + (clockMin<10?'0':'') + clockMin;
-    stageEls.reached.textContent  = reached;
-    stageEls.frontier.textContent = frontier;
-    stageEls.conf.textContent = phase2 > 0 ? 'High' : (phase1 > 0.35 ? 'Moderate' : (phase1>0 ? 'Low' : '—'));
-    stageEls.conf.style.color = phase2 > 0 ? '#34D399' : '';
+    if(Math.abs(p - clockP) > 0.0004){
+      clockBase = elapsedSec; clockAnchor = performance.now(); clockP = p;
+    }
 
     // beats
     var want = 0;
@@ -1250,7 +1249,7 @@ void main(){
     beatEl.style.opacity = Math.min(into, outof);
     beatEl.style.transform =
       'perspective(1200px) translateY(calc(-50% + ' + ((1-into)*20).toFixed(1) + 'px)) ' +
-      'rotateY(' + (7 + mx*3).toFixed(2) + 'deg) rotateX(' + (-my*2).toFixed(2) + 'deg) ' +
+      'rotateY(' + (3 + mx*2.4).toFixed(2) + 'deg) rotateX(' + (-my*1.6).toFixed(2) + 'deg) ' +
       'translateZ(' + (into*40).toFixed(0) + 'px)';
   }
 
