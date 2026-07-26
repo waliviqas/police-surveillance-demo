@@ -824,25 +824,25 @@ void main(){
 
   float F = 0.045 + 0.955*pow(1.0 - ndv, 4.5);
 
-  vec3 col = refr + refl * F * 0.95;
+  vec3 col = refr + refl * F * 1.12;
 
   // ---- hot thin specular streaks on the ridges (key, upper left) ----
   vec3 Hv = normalize(L - I);
   float nh = max(dot(N, Hv), 0.0);
-  col += vec3(0.90,0.95,1.00) * pow(nh, 190.0) * 9.0;  // thin, hot
+  col += vec3(0.90,0.95,1.00) * pow(nh, 210.0) * 11.5; // thin, hot
   col += vec3(0.50,0.66,0.95) * pow(nh, 42.0) * 0.26;  // broad satin sheen
 
   // second, tighter light for silver chrome glints
   vec3 L2 = normalize(vec3(-0.30, 0.92, 0.42));
   vec3 H2 = normalize(L2 - I);
-  col += vec3(0.80,0.90,1.00) * pow(max(dot(N,H2),0.0), 520.0) * 7.0;
+  col += vec3(0.80,0.90,1.00) * pow(max(dot(N,H2),0.0), 560.0) * 9.0;
 
   // THIRD source, low and to the right. The two upper-left lights left the
   // lower-centre with no specular incident on it at all.
   vec3 L3 = normalize(vec3(0.70, -0.40, 0.59));
   vec3 H3 = normalize(L3 - I);
   float nh3 = max(dot(N, H3), 0.0);
-  col += vec3(0.84,0.92,1.00) * pow(nh3, 150.0) * 4.2;
+  col += vec3(0.84,0.92,1.00) * pow(nh3, 170.0) * 5.4;
   col += vec3(0.42,0.60,0.94) * pow(nh3, 24.0)  * 0.22;
 
   // ---- silver chrome along the fold edges ----
@@ -947,11 +947,10 @@ void main(){
       gmx += (tmx2-gmx)*0.04; gmy += (tmy2-gmy)*0.04;
       gl.uniform1f(uT, still ? 8 : (performance.now()-t0)/1000);
       gl.uniform2f(uM, gmx, gmy);
-      // the glass is the hero on the opening card, then steps back so the
-      // camera graph and the copy own the middle of the deck
-      var dh = document.documentElement.scrollHeight - innerHeight;
-      var gpr = dh > 0 ? pageYOffset/dh : 0;
-      gl.uniform1f(uD, 0.86 - Math.min(gpr*2.2, 1) * 0.52);
+      // Constant. This used to fall to a third of its opening value as you
+      // scrolled, which is why later acts sank into navy while the title card
+      // stayed bright. The glass now holds the opening key the whole way down.
+      gl.uniform1f(uD, 0.86);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       if(!still) requestAnimationFrame(loop);
     })();
