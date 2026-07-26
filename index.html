@@ -174,6 +174,23 @@
   .fc.bl{bottom:14px;left:14px;border-right:0;border-top:0}
   .fc.br{bottom:14px;right:14px;border-left:0;border-top:0}
 
+  /* step indicator: which beat you are on, and how many are left */
+  .steps{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);z-index:210;
+    display:flex;align-items:center;gap:14px;pointer-events:none;
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.18em;
+    color:var(--faint)}
+  .steps .ticks{display:flex;gap:5px}
+  .steps .ticks i{width:16px;height:2px;background:rgba(255,255,255,.16);
+    transition:background .3s ease,box-shadow .3s ease}
+  .steps .ticks i.on{background:rgba(var(--accent),1);
+    box-shadow:0 0 10px rgba(var(--accent),.9)}
+  .steps b{color:var(--ink);font-weight:500}
+  .keyhint{position:fixed;bottom:26px;right:3vw;z-index:210;pointer-events:none;
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.16em;
+    color:var(--faint)}
+  .keyhint kbd{display:inline-block;border:1px solid rgba(255,255,255,.22);
+    padding:2px 7px;margin:0 2px;color:var(--ink)}
+
   .rail{position:fixed;top:0;left:0;height:2px;width:0;z-index:300;
     background:linear-gradient(90deg,var(--cy-300),var(--vi-400));
     box-shadow:0 0 16px rgba(34,211,238,.9)}
@@ -396,6 +413,8 @@
   <span class="fc tl"></span><span class="fc tr"></span><span class="fc bl"></span><span class="fc br"></span>
 </div>
 <div class="rail" id="rail"></div>
+<div class="steps" aria-hidden="true"><b data-stepnow>01</b><span data-steptotal>/ 01</span><span class="ticks" data-ticks></span></div>
+<div class="keyhint" aria-hidden="true"><kbd>&larr;</kbd><kbd>&rarr;</kbd> to advance</div>
 
 <div class="mark">Clar<span>ity</span></div>
 
@@ -1196,14 +1215,99 @@
   window.addEventListener('load', render);
   render();
 
-  document.addEventListener('keydown', function(e){
-    if(['ArrowDown','PageDown',' ','ArrowUp','PageUp'].indexOf(e.key)===-1) return;
-    var fwd = (e.key!=='ArrowUp' && e.key!=='PageUp'), y = window.pageYOffset, target=null;
-    var tops = acts.map(function(a){ return a.el.offsetTop; });
-    if(fwd){ for(var i=0;i<tops.length;i++) if(tops[i]>y+8){ target=tops[i]; break; } }
-    else   { for(var j=tops.length-1;j>=0;j--) if(tops[j]<y-8){ target=tops[j]; break; } }
-    if(target!==null){ e.preventDefault(); window.scrollTo({top:target,behavior:'smooth'}); }
+  /* ══════════════════════════════════════════════════════════════════════
+     PRESENTATION MODE
+     The deck no longer responds to the wheel. Each arrow press advances to
+     the next beat and the position is tweened there, so every animation is
+     something you trigger rather than something you scrub past. The pins
+     still need real document scroll to work, so we drive the scroll position
+     ourselves and simply refuse manual input.
+     ══════════════════════════════════════════════════════════════════════ */
+  var STEPS = [
+    {a:'act-title',   p:0.16, label:'Title'},
+    {a:'act-title',   p:0.72, label:'Wordmark resolves'},
+    {a:'act-hero',    p:0.30, label:'Headline'},
+    {a:'act-hero',    p:0.66, label:'Premise'},
+    {a:'act-problem', p:0.26, label:'The first hour'},
+    {a:'act-problem', p:0.52, label:'Alerts go out, not outward'},
+    {a:'act-problem', p:0.72, label:'Cameras never talk'},
+    {a:'act-problem', p:0.92, label:'Area grows as t squared'},
+    {a:'act-search',  p:0.06, label:'14:32, last seen'},
+    {a:'act-search',  p:0.30, label:'The cone expands'},
+    {a:'act-search',  p:0.48, label:'Frontier widens'},
+    {a:'act-search',  p:0.62, label:'A hit, nine minutes out'},
+    {a:'act-search',  p:0.74, label:'The path draws'},
+    {a:'act-search',  p:0.84, label:'Confirmed and locked'},
+    {a:'act-search',  p:0.97, label:'Re-bloom'},
+    {a:'act-how',     p:0.10, label:'Describe them'},
+    {a:'act-how',     p:0.35, label:'Every edge is a travel time'},
+    {a:'act-how',     p:0.60, label:'The alert is a walker'},
+    {a:'act-how',     p:0.88, label:'On a hit it re-blooms'},
+    {a:'act-privacy', p:0.30, label:'No faces, ever'},
+    {a:'act-privacy', p:0.60, label:'Descriptions, not identities'},
+    {a:'act-privacy', p:0.86, label:'Auditable by construction'},
+    {a:'act-close',   p:0.55, label:'Clarity'}
+  ];
+
+  var step = 0, tweening = null;
+  function stepY(i){
+    var el = document.getElementById(STEPS[i].a);
+    if(!el) return 0;
+    var span = el.offsetHeight - window.innerHeight;
+    return Math.round(el.offsetTop + STEPS[i].p * Math.max(span, 0));
+  }
+
+  var nowEl   = document.querySelector('[data-stepnow]');
+  var totalEl = document.querySelector('[data-steptotal]');
+  var ticksEl = document.querySelector('[data-ticks]');
+  totalEl.textContent = '/ ' + (STEPS.length < 10 ? '0' : '') + STEPS.length;
+  STEPS.forEach(function(){ ticksEl.appendChild(document.createElement('i')); });
+  var tickEls = [].slice.call(ticksEl.children);
+  function paintStep(){
+    nowEl.textContent = (step+1 < 10 ? '0' : '') + (step+1);
+    tickEls.forEach(function(t,i){ t.classList.toggle('on', i <= step); });
+  }
+
+  function goTo(i, instant){
+    step = clamp(i, 0, STEPS.length-1);
+    paintStep();
+    var from = window.pageYOffset, to = stepY(step), dist = to - from;
+    if(instant || Math.abs(dist) < 2){ window.scrollTo(0, to); onScroll(); return; }
+    // longer hops get a little more time, so every beat lands with the same weight
+    var dur = clamp(520 + Math.abs(dist) * 0.16, 520, 1500);
+    var t0 = null;
+    if(tweening) cancelAnimationFrame(tweening);
+    (function run(){
+      tweening = requestAnimationFrame(function frame(ts){
+        if(t0 === null) t0 = ts;
+        var k = clamp((ts - t0)/dur, 0, 1);
+        var e = k < 0.5 ? 4*k*k*k : 1 - Math.pow(-2*k+2, 3)/2;   // ease in out
+        window.scrollTo(0, from + dist*e);
+        onScroll();
+        if(k < 1) tweening = requestAnimationFrame(frame);
+        else tweening = null;
+      });
+    })();
+  }
+
+  // the wheel and touch no longer move the deck; only the keys do
+  ['wheel','touchmove'].forEach(function(ev){
+    window.addEventListener(ev, function(e){ e.preventDefault(); }, {passive:false});
   });
+
+  var NEXT = ['ArrowRight','ArrowDown','PageDown',' ','Enter'];
+  var PREV = ['ArrowLeft','ArrowUp','PageUp','Backspace'];
+  document.addEventListener('keydown', function(e){
+    if(NEXT.indexOf(e.key) > -1){ e.preventDefault(); goTo(step+1); }
+    else if(PREV.indexOf(e.key) > -1){ e.preventDefault(); goTo(step-1); }
+    else if(e.key === 'Home'){ e.preventDefault(); goTo(0); }
+    else if(e.key === 'End'){ e.preventDefault(); goTo(STEPS.length-1); }
+  });
+
+  // land on the first beat, and keep the current beat put through a resize
+  window.addEventListener('load', function(){ goTo(0, true); });
+  window.addEventListener('resize', function(){ goTo(step, true); });
+  goTo(0, true);
 })();
 </script>
 </body>
