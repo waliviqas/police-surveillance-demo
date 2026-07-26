@@ -48,21 +48,11 @@
   ::selection{background:rgba(34,211,238,.3)}
 
   /* ══════════ ambient depth ══════════ */
-  .liquid{position:fixed;inset:0;z-index:-3;overflow:hidden;contain:strict;
+  .liquid{position:fixed;inset:0;z-index:-3;overflow:hidden;contain:paint;
     background:radial-gradient(120% 90% at 50% 0%,#0A1526 0%,var(--void-2) 45%,var(--void) 100%)}
-  .blob{position:absolute;border-radius:50%;filter:blur(80px);will-change:transform;opacity:.55}
-  .b1{width:60vw;height:60vw;left:-16vw;top:-14vw;
-      background:radial-gradient(circle,rgba(var(--accent),.78),transparent 62%);
-      animation:drift1 28s ease-in-out infinite alternate}
-  .b2{width:52vw;height:52vw;right:-12vw;top:10vh;
-      background:radial-gradient(circle,rgba(108,92,231,.6),transparent 62%);
-      animation:drift2 34s ease-in-out infinite alternate}
-  .b3{width:50vw;height:50vw;left:24vw;bottom:-20vw;
-      background:radial-gradient(circle,rgba(var(--accent),.6),transparent 62%);
-      animation:drift3 40s ease-in-out infinite alternate}
-  @keyframes drift1{to{transform:translate3d(9vw,7vh,0) scale(1.15)}}
-  @keyframes drift2{to{transform:translate3d(-11vw,9vh,0) scale(.86)}}
-  @keyframes drift3{to{transform:translate3d(7vw,-9vh,0) scale(1.2)}}
+  /* the real thing is a shader, not blurred divs. The gradient on .liquid
+     above stays as the paint-on-failure background if WebGL is unavailable. */
+  #gl{position:fixed;top:0;left:0;width:100vw;height:100vh;display:block}
 
   /* a faint neural mesh: layered nodes, fully connected, with signal travelling
      along a handful of paths. This is the ambient layer, not the camera graph. */
@@ -381,9 +371,7 @@
 </head>
 <body>
 
-<div class="liquid" aria-hidden="true">
-  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
-</div>
+<div class="liquid" aria-hidden="true"><canvas id="gl"></canvas></div>
 <div class="lens" data-lens aria-hidden="true"></div>
 <div class="neural" aria-hidden="true"><svg preserveAspectRatio="none" viewBox="0 0 1600 900" data-neural></svg></div>
 <div class="lightfield" aria-hidden="true">
@@ -624,6 +612,127 @@
   [].slice.call(document.querySelectorAll('.curtain span')).forEach(function(s,i){
     s.style.animationDelay = (-i*3.4)+'s';
   });
+
+
+  /* ══════════════════════════════════════════════════════════════════════
+     LIQUID GLASS
+     A fragment shader, because CSS cannot do this. Gradients have no surface,
+     and without a surface there is no normal, and without a normal there is
+     no specular highlight, which is the entire thing that makes glass look
+     like glass.
+
+     Height comes from domain-warped fbm: noise whose input coordinates are
+     themselves displaced by noise, twice. That is what produces the folded
+     ribbon flow rather than blobs. Screen-space derivatives of that height
+     give the surface normal essentially free, and from the normal we get a
+     Blinn specular for the hot edges and a Fresnel term for the rim glow.
+     ══════════════════════════════════════════════════════════════════════ */
+  (function(){
+    var cv = document.getElementById('gl');
+    if(!cv) return;
+    var gl = cv.getContext('webgl', {antialias:false, alpha:false,
+                                     powerPreference:'high-performance'});
+    if(!gl) return;                                   // CSS gradient shows through
+    gl.getExtension('OES_standard_derivatives');
+
+    var VS = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
+    var FS = [
+      '#extension GL_OES_standard_derivatives : enable',
+      'precision highp float;',
+      'uniform vec2 u_res; uniform float u_t; uniform vec2 u_m; uniform float u_dim;',
+      'float h21(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}',
+      'float vnoise(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.-2.*f);',
+      '  return mix(mix(h21(i),h21(i+vec2(1,0)),u.x),',
+      '             mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),u.x),u.y);}',
+      'float fbm(vec2 p){float v=0.,a=.5;mat2 m=mat2(1.6,1.2,-1.2,1.6);',
+      '  for(int i=0;i<4;i++){v+=a*vnoise(p);p=m*p;a*=.5;}return v;}',
+      'void main(){',
+      '  vec2 uv=(gl_FragCoord.xy-.5*u_res)/u_res.y;',
+      '  float t=u_t*0.045;',
+      '  vec2 mo=u_m*0.22;',
+      // two rounds of domain warping: this is what makes it flow like poured glass
+      '  vec2 q=vec2(fbm(uv*0.75+t+mo), fbm(uv*0.75+vec2(4.3,1.7)-t));',
+      '  vec2 r=vec2(fbm(uv*0.95+2.2*q+vec2(1.7,9.2)+t*1.5),',
+      '              fbm(uv*0.95+2.2*q+vec2(8.3,2.8)-t*1.2));',
+      '  float hgt=fbm(uv*1.05+2.8*r);',
+      // a surface, therefore a normal, therefore light
+      '  vec3 n=normalize(vec3(dFdx(hgt)*34., dFdy(hgt)*34., 1.));',
+      '  vec3 L=normalize(vec3(-.45,.72,.62));',
+      '  vec3 V=vec3(0.,0.,1.);',
+      '  vec3 H=normalize(L+V);',
+      '  float spec=pow(max(dot(n,H),0.),42.);',
+      '  float spec2=pow(max(dot(n,normalize(vec3(.6,-.4,.7))),0.),110.);',
+      '  float fres=pow(1.-max(n.z,0.),2.6);',
+      '  float band=smoothstep(.28,.78,hgt);',
+      // the palette: deep water, working blue, ice
+      '  vec3 deep=vec3(.008,.043,.106);',
+      '  vec3 mid =vec3(.055,.310,.706);',
+      '  vec3 lite=vec3(.639,.851,1.0);',
+      '  vec3 col=mix(deep,mid,band);',
+      '  col=mix(col,lite,fres*.42);',
+      '  col+=spec*vec3(.55,.78,1.)*.85;',
+      '  col+=spec2*vec3(1.,1.,1.)*.55;',
+      // caustic threads where the surface folds hard
+      '  float edge=smoothstep(.55,.9,abs(dFdx(hgt))*90.+abs(dFdy(hgt))*90.);',
+      '  col+=edge*vec3(.35,.62,.95)*.3;',
+      '  col*=1.-.52*length(uv*vec2(.62,1.0));',   // vignette
+      '  col*=u_dim;',                                // vivid at the open, calm later
+      '  col+=vec3(.004,.014,.032);',                // lift the blacks off pure void
+      '  gl_FragColor=vec4(col,1.);',
+      '}'
+    ].join('\n');
+
+    function sh(type, src){
+      var o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o);
+      if(!gl.getShaderParameter(o, gl.COMPILE_STATUS)) return null;
+      return o;
+    }
+    var vs = sh(gl.VERTEX_SHADER, VS), fs = sh(gl.FRAGMENT_SHADER, FS);
+    if(!vs || !fs) return;
+    var pr = gl.createProgram();
+    gl.attachShader(pr, vs); gl.attachShader(pr, fs); gl.linkProgram(pr);
+    if(!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
+    gl.useProgram(pr);
+    var buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,3,-1,-1,3]), gl.STATIC_DRAW);
+    var loc = gl.getAttribLocation(pr,'p');
+    gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+    var uRes = gl.getUniformLocation(pr,'u_res'),
+        uT   = gl.getUniformLocation(pr,'u_t'),
+        uM   = gl.getUniformLocation(pr,'u_m'),
+        uD   = gl.getUniformLocation(pr,'u_dim');
+
+    // half resolution: the image is soft by nature, so nobody can tell, and it
+    // quarters the fragment work
+    var SCALE = 0.75, gmx = 0, gmy = 0, tmx2 = 0, tmy2 = 0;
+    function size(){
+      cv.width  = Math.max(1, Math.round(innerWidth  * SCALE));
+      cv.height = Math.max(1, Math.round(innerHeight * SCALE));
+      gl.viewport(0,0,cv.width,cv.height);
+      gl.uniform2f(uRes, cv.width, cv.height);
+    }
+    size();
+    addEventListener('resize', size);
+    addEventListener('mousemove', function(e){
+      tmx2 = e.clientX/innerWidth - .5; tmy2 = .5 - e.clientY/innerHeight;
+    }, {passive:true});
+
+    var t0 = performance.now();
+    var still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    (function loop(){
+      gmx += (tmx2-gmx)*0.04; gmy += (tmy2-gmy)*0.04;
+      gl.uniform1f(uT, still ? 8 : (performance.now()-t0)/1000);
+      gl.uniform2f(uM, gmx, gmy);
+      // the glass is the hero on the opening card, then steps back so the
+      // camera graph and the copy own the middle of the deck
+      var dh = document.documentElement.scrollHeight - innerHeight;
+      var gpr = dh > 0 ? pageYOffset/dh : 0;
+      gl.uniform1f(uD, 0.86 - Math.min(gpr*2.2, 1) * 0.52);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      if(!still) requestAnimationFrame(loop);
+    })();
+  })();
 
   /* ── the web ────────────────────────────────────────────────────────────
      Not a mesh. A real orb web has two parts: straight radial threads
