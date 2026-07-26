@@ -1102,6 +1102,7 @@ void main(){
     {at:0.74, h:'It re-blooms<br><em>from the sighting.</em>',
      p:'The clock resets at the new position and the cone expands again, tighter and more confident. The confirmed path <strong>is written back into the graph.</strong>'}
   ];
+  var BEAT_IN = 0.05, BEAT_OUT = 0.04;
   var beatEl = document.querySelector('[data-beat]');
   var beatH  = beatEl.querySelector('h3'), beatP = beatEl.querySelector('p');
   var beatIdx = -1;
@@ -1140,14 +1141,14 @@ void main(){
   function renderSearch(p){
     // p 0→1 across the act. The hit lands at 0.56, then the second bloom runs.
     var phase1 = seg(p, 0.04, 0.56);
-    var phase2 = seg(p, 0.60, 0.96);
+    var phase2 = seg(p, 0.62, 0.86);
     // linear, not eased: a cone expands at a constant rate, and easing made
     // the whole network light up in the first third of the act
     var t1 = phase1 * A1.max * 1.04;
     var t2 = phase2 * A2.max * 0.72;
 
     lastT1 = t1; lastT2 = phase2>0 ? t2 : -1;
-    var tr = ease(seg(p, 0.56, 0.70)), lock = ease(seg(p, 0.70, 0.80));
+    var tr = ease(seg(p, 0.575, 0.645)), lock = ease(seg(p, 0.775, 0.855));
     // the volume turns slowly as the search runs, and leans with the cursor
     project((p-0.5)*0.52, -0.08);
     var reached = 0, frontier = 0;
@@ -1241,10 +1242,13 @@ void main(){
       beatH.innerHTML = BEATS[want].h;
       beatP.innerHTML = BEATS[want].p;
     }
-    // fade the panel between beats so the swap is never caught mid-change
-    var localTo = (want+1 < BEATS.length) ? BEATS[want+1].at : 1.02;
-    var into = seg(p, BEATS[want].at, BEATS[want].at + 0.045);
-    var outof = 1 - seg(p, localTo - 0.035, localTo);
+    // fade the panel between beats so the swap is never caught mid-change.
+    // BEAT_IN and BEAT_OUT are exported so the step positions can be derived
+    // from them; hand-picking both independently is what let a stop land at
+    // 57% opacity, which read as the deck freezing mid-animation.
+    var localTo = (want+1 < BEATS.length) ? BEATS[want+1].at : 1.04;
+    var into = seg(p, BEATS[want].at, BEATS[want].at + BEAT_IN);
+    var outof = 1 - seg(p, localTo - BEAT_OUT, localTo);
     beatEl.style.opacity = Math.min(into, outof);
     beatEl.style.transform =
       'perspective(1200px) translateY(calc(-50% + ' + ((1-into)*20).toFixed(1) + 'px)) ' +
@@ -1443,16 +1447,21 @@ void main(){
      p = 0.46, and the staggered fades finish at p = 0.675, so a stop before
      either of those catches the group halfway. One press plays one whole
      group and comes to rest. */
+  // One stop per beat, placed in the middle of that beat's plateau: after its
+  // fade-in has finished and before its fade-out begins. Derived rather than
+  // guessed, so a stop can never land inside a cross-fade.
+  var SEARCH_STOPS = BEATS.map(function(b, i){
+    var from = b.at + BEAT_IN;
+    var to   = (i+1 < BEATS.length ? BEATS[i+1].at : 1.04) - BEAT_OUT;
+    return {a:'act-search', p: from + (to-from)*0.55, of: b.label || ('beat '+(i+1))};
+  });
+
   var STEPS = [
     {a:'act-title',   p:0.68, of:'wordmark and tagline'},
     {a:'act-hero',    p:0.62, of:'headline and premise together'},
     {a:'act-problem', p:0.52, of:'headline, fully drawn'},
     {a:'act-problem', p:0.82, of:'all three cards'},
-    {a:'act-search',  p:0.16, of:'last seen, origin lit'},
-    {a:'act-search',  p:0.50, of:'the cone, fully expanded'},
-    {a:'act-search',  p:0.72, of:'the hit and the path drawn'},
-    {a:'act-search',  p:0.84, of:'confirmed and locked'},
-    {a:'act-search',  p:0.97, of:'re-bloom'},
+    SEARCH_STOPS[0], SEARCH_STOPS[1], SEARCH_STOPS[2], SEARCH_STOPS[3],
     {a:'act-how',     p:0.125,of:'describe them'},
     {a:'act-how',     p:0.375,of:'every edge is a travel time'},
     {a:'act-how',     p:0.625,of:'the alert is a walker'},
