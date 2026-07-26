@@ -23,6 +23,7 @@
     --dim:#BCD6EE;
     --faint:#8FB2D2;
     --good:#34D399;
+    --bad:#FF5B5B;
     --warn:#FB923C;
     /* glass, on dark: light film + luminous rim */
     --glass:linear-gradient(155deg,rgba(3,22,46,.62) 0%,rgba(5,34,66,.50) 55%,rgba(8,48,92,.56) 100%);
@@ -203,6 +204,8 @@
     letter-spacing:.24em;color:var(--cy-400);margin-bottom:14px}
   .card h3{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:19px;line-height:1.25;
     margin-bottom:11px;letter-spacing:-.01em}
+  .card h3 b{color:var(--bad);font-weight:700;
+    text-shadow:0 0 22px rgba(255,91,91,.55)}
   .card p{color:var(--dim);font-size:14px;line-height:1.68}
   .card p strong{color:var(--ink);font-weight:500}
 
@@ -404,28 +407,28 @@
 <!-- ═══════ 2 · PROBLEM ═══════ -->
 <section class="act" id="act-problem" style="height:460vh">
   <div class="pin">
-    <div class="eyebrow" data-fade>The problem</div>
     <div class="line act-type">
-      <span class="w"><i>The</i></span><span class="w"><i>first</i></span>
-      <span class="w hot"><i>hour</i></span><span class="w hot"><i>is</i></span><span class="w hot"><i>everything</i></span>
+      <span class="w"><i>The</i></span><span class="w hot"><i>witness</i></span><span class="w"><i>is</i></span><span class="w"><i>instant.</i></span>
+    </div>
+    <div class="line act-type">
+      <span class="w"><i>The</i></span><span class="w hollow"><i>response</i></span><span class="w"><i>is</i></span><span class="w hot"><i>not.</i></span>
     </div>
     <div class="cards">
       <div class="card glass" data-fade><div class="num">01</div>
-        <h3>Alerts go out, not outward</h3>
-        <p>An alert is broadcast to everyone at once, or drawn as a radius on a map.
-        Nobody moves in a circle. People move along <strong>streets, transit lines
-        and sidewalks</strong>, so a radius searches mostly ground they could never
-        have reached.</p></div>
+        <h3>The worst happened suddenly</h3>
+        <p>A child is separated on a platform. Someone walks out of a care home.
+        There is <strong>no warning and no plan</strong>, and nobody yet has the
+        whole picture.</p></div>
       <div class="card glass" data-fade><div class="num">02</div>
-        <h3>Cameras never talk to each other</h3>
-        <p>Every feed is watched alone. The camera two blocks north has
-        <strong>no idea</strong> what the one behind the station just saw, so the
-        same person is found from scratch, over and over.</p></div>
+        <h3>In the chaos, shock breeds panic</h3>
+        <p>The people closest to it are the least able to act. Descriptions
+        conflict, memories blur, and the first minutes go to working out
+        <strong>what just happened</strong>.</p></div>
       <div class="card glass" data-fade><div class="num">03</div>
-        <h3>The area grows as time squared</h3>
-        <p>Someone on foot is inside <strong>0.8 mi²</strong> after ten minutes and
-        <strong>7 mi²</strong> after thirty. Every minute spent organising costs
-        more than the minute before it.</p></div>
+        <h3>The first response is <b>delayed</b></h3>
+        <p>By the time the call is made, the ground to search has outgrown the
+        people searching it. Someone on foot is inside <strong>0.8 mi²</strong>
+        after ten minutes and <strong>7 mi²</strong> after thirty.</p></div>
     </div>
   </div>
 </section>
@@ -1103,6 +1106,7 @@ void main(){
      p:'The clock resets at the new position and the cone expands again, tighter and more confident. The confirmed path <strong>is written back into the graph.</strong>'}
   ];
   var BEAT_IN = 0.05, BEAT_OUT = 0.04;
+  var FADE_FROM = 0.56, FADE_STAGGER = 0.16, FADE_DUR = 0.16;
   var beatEl = document.querySelector('[data-beat]');
   var beatH  = beatEl.querySelector('h3'), beatP = beatEl.querySelector('p');
   var beatIdx = -1;
@@ -1388,7 +1392,10 @@ void main(){
       if(a.fades.length){
         var fn = a.fades.length;
         a.fades.forEach(function(f,i){
-          var t = ease(seg(p, 0.28 + (i/fn)*0.26, 0.28 + (i/fn)*0.26 + 0.2));
+          // FADE_FROM sits past the headline stop and the last item lands
+          // before the content stop, so no stop can catch a card mid-arrival.
+          var a0 = FADE_FROM + (i/fn)*FADE_STAGGER;
+          var t  = ease(seg(p, a0, a0 + FADE_DUR));
           f.style.opacity = t;
           f.style.transform = 'translateY(' + ((1-t)*24) + 'px)';
         });
@@ -1458,17 +1465,17 @@ void main(){
 
   var STEPS = [
     {a:'act-title',   p:0.68, of:'wordmark and tagline'},
-    {a:'act-hero',    p:0.62, of:'headline and premise together'},
-    {a:'act-problem', p:0.52, of:'headline, fully drawn'},
-    {a:'act-problem', p:0.82, of:'all three cards'},
+    {a:'act-hero',    p:0.90, of:'headline and premise together'},
+    {a:'act-problem', p:0.50, of:'headline, fully drawn'},
+    {a:'act-problem', p:0.90, of:'all three cards'},
     SEARCH_STOPS[0], SEARCH_STOPS[1], SEARCH_STOPS[2], SEARCH_STOPS[3],
     {a:'act-how',     p:0.125,of:'describe them'},
     {a:'act-how',     p:0.375,of:'every edge is a travel time'},
     {a:'act-how',     p:0.625,of:'the alert is a walker'},
     {a:'act-how',     p:0.875,of:'on a hit it re-blooms'},
-    {a:'act-privacy', p:0.52, of:'headline, fully drawn'},
-    {a:'act-privacy', p:0.82, of:'all three commitments'},
-    {a:'act-close',   p:0.82, of:'wordmark, tagline and team'}
+    {a:'act-privacy', p:0.50, of:'headline, fully drawn'},
+    {a:'act-privacy', p:0.90, of:'all three commitments'},
+    {a:'act-close',   p:0.90, of:'wordmark, tagline and team'}
   ];
 
   var step = 0, tweening = null;
