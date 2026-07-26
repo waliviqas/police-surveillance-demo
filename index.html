@@ -67,6 +67,7 @@
   /* a faint neural mesh: layered nodes, fully connected, with signal travelling
      along a handful of paths. This is the ambient layer, not the camera graph. */
   .neural{position:fixed;inset:0;z-index:-2;pointer-events:none;contain:strict;
+    transition:opacity .5s ease;
     -webkit-mask-image:radial-gradient(125% 85% at 50% 45%,#000 15%,transparent 82%);
             mask-image:radial-gradient(125% 85% at 50% 45%,#000 15%,transparent 82%)}
   .neural svg{width:100%;height:100%;display:block}
@@ -92,7 +93,7 @@
      interference is what makes it read as liquid rather than as stripes. */
   .lightfield{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;
     transform:translate3d(calc(var(--mx) * 22px),calc(var(--my) * 13px),0)}
-  .curtain{position:absolute;top:0;bottom:0;width:32vw;overflow:hidden;opacity:.5;
+  .curtain{position:absolute;top:0;bottom:0;width:32vw;overflow:hidden;opacity:.3;
            contain:strict;filter:blur(10px) saturate(150%);mix-blend-mode:screen}
   .curtain.l{left:0;
     -webkit-mask-image:linear-gradient(90deg,#000 0%,rgba(0,0,0,.8) 24%,transparent 86%);
@@ -246,18 +247,17 @@
     box-shadow:0 0 22px -6px rgba(var(--accent),.7);transform:translate(14px,-50%)}
   .probe b{color:var(--cy-300);font-weight:500}
   .probe u{display:block;text-decoration:none;color:var(--faint);margin-top:3px}
-  .edge{stroke:rgba(120,190,230,.14);stroke-width:1;fill:none}
-  .edge.live{stroke:url(#edgeGrad);stroke-width:1.8}
-  .node rect.core{fill:#0B1725;stroke:rgba(140,200,230,.35);stroke-width:1.2}
-  .node rect.halo{fill:none;stroke:var(--cy-300);stroke-width:1;opacity:0}
+  .edge{stroke:rgba(120,190,230,.10);stroke-width:.9;fill:none}
+  .edge.live{stroke:url(#edgeGrad);stroke-width:2.4}
+  .node rect.core{fill:#0B1725;stroke:rgba(140,200,230,.22);stroke-width:1}
+  .node rect.halo{fill:none;stroke:rgba(var(--accent),1);stroke-width:2.4;opacity:0}
   .readout{position:absolute;left:6vw;bottom:8vh;display:flex;gap:34px;flex-wrap:wrap;z-index:3}
   .readout .k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
   .readout .v{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(22px,2.4vw,34px);
     letter-spacing:-.03em;color:var(--ink)}
   .readout .v.cy{background:linear-gradient(120deg,var(--cy-300),var(--vi-400));
     -webkit-background-clip:text;background-clip:text;color:transparent}
-  .beat{position:absolute;left:6vw;top:50%;transform:translateY(-50%);
-    max-width:min(460px,38vw);padding:30px 30px;z-index:3;opacity:0}
+  .beat{position:absolute;left:5vw;top:50%;max-width:min(400px,32vw);padding:28px 28px;z-index:3;opacity:0}
   .beat h3{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(24px,2.8vw,40px);
     letter-spacing:-.035em;line-height:1.05;margin-bottom:14px}
   .beat h3 em{font-style:normal;background:linear-gradient(120deg,var(--cy-300),var(--vi-400));
@@ -469,7 +469,7 @@
           </linearGradient>
         </defs>
         <g data-edges></g>
-        <g data-trail fill="none" stroke="#FF5CA8" stroke-width="3"
+        <g data-trail fill="none" stroke="#FF5CA8" stroke-width="5.5"
            stroke-linecap="round" opacity=".95"></g>
         <g data-nodes></g>
       </svg>
@@ -736,7 +736,7 @@
     var d = N.map(function(b,j){
       return {j:j, d:Math.hypot(a.x-b.x, a.y-b.y)};
     }).sort(function(p,q){ return p.d-q.d; });
-    for(var k=1;k<=3;k++){
+    for(var k=1;k<=2;k++){
       var j = d[k].j, key = Math.min(i,j)+'-'+Math.max(i,j);
       if(seen[key] || d[k].d > 330) continue;
       seen[key] = 1;
@@ -770,7 +770,8 @@
     return {node:dist, edge:edgeT, max:max};
   }
 
-  var ORIGIN = 10, HIT = 41;               // fixed so the story is repeatable
+  // both sit right of centre so the bloom never plays behind the copy panel
+  var ORIGIN = 23, HIT = 42;               // fixed so the story is repeatable
   var A1 = arrivals(ORIGIN), A2 = arrivals(HIT);
 
   // the confirmed trail: shortest path origin → hit
@@ -861,7 +862,7 @@
   var lastT1 = 0, lastT2 = -1;
   // perspective projection. Rotating a volume rather than tilting a plane is
   // the difference between something that looks 3D and something that is.
-  var CX = 800, CY = 450, FOCAL = 1500;
+  var CX = 800, CY = 450, FOCAL = 1500, SHIFT = 55;
   var PJ = N.map(function(){ return {x:0,y:0,f:1}; });
   function project(rot, pitch){
     var cs = Math.cos(rot), sn = Math.sin(rot);
@@ -871,10 +872,11 @@
       var rx = dx*cs - dz*sn, rz = dx*sn + dz*cs;      // yaw
       var ry = dy*cp - rz*sp; rz = dy*sp + rz*cp;      // pitch
       var f  = FOCAL/(FOCAL-rz);
-      PJ[i].x = CX + rx*f; PJ[i].y = CY + ry*f; PJ[i].f = f;
+      PJ[i].x = CX + SHIFT + rx*f; PJ[i].y = CY + ry*f; PJ[i].f = f;
     }
   }
 
+  function pf2(a,b){ return (a+b)/2; }
   function renderSearch(p){
     // p 0→1 across the act. The hit lands at 0.56, then the second bloom runs.
     var phase1 = seg(p, 0.04, 0.56);
@@ -886,7 +888,7 @@
 
     lastT1 = t1; lastT2 = phase2>0 ? t2 : -1;
     // the volume turns slowly as the search runs, and leans with the cursor
-    project((p-0.5)*0.44, -0.06);
+    project((p-0.5)*0.52, -0.08);
     var reached = 0, frontier = 0;
     for(var i=0;i<N.length;i++){
       var d1 = A1.node[i], d2 = A2.node[i];
@@ -900,15 +902,16 @@
       if(on && fresh > 0.15) frontier++;
       var lit = on ? 1 : 0.34;
       el.core.style.fill = on ? (i===HIT && phase2>0 ? '#FF5CA8' : '#22D3EE') : '#0B1725';
-      el.core.style.stroke = on ? 'rgba(207,250,254,.9)' : 'rgba(140,200,230,.28)';
+      el.core.style.stroke = on ? '#FFFFFF' : 'rgba(140,200,230,.2)';
+      el.core.style.strokeWidth = on ? 2 : 1;
       var px = PJ[i].x, py = PJ[i].y, pf = PJ[i].f;
-      var hs = (10 + fresh*46) * pf;             // the frontier ring, squared
+      var hs = (16 + fresh*72) * pf;             // the frontier ring, squared
       el.halo.setAttribute('x', (px - hs/2).toFixed(1));
       el.halo.setAttribute('y', (py - hs/2).toFixed(1));
       el.halo.setAttribute('width', hs.toFixed(1));
       el.halo.setAttribute('height', hs.toFixed(1));
-      el.halo.style.opacity = on ? fresh*0.55 : 0;
-      var cs = el.core.__base * (1 + (on ? fresh*0.55 : 0)) * pf;
+      el.halo.style.opacity = on ? fresh*0.9 : 0;
+      var cs = el.core.__base * (1 + (on ? fresh*0.85 : 0)) * pf;
       el.core.setAttribute('x', (px - cs/2).toFixed(2));
       el.core.setAttribute('y', (py - cs/2).toFixed(2));
       el.core.setAttribute('width', cs.toFixed(2));
@@ -925,7 +928,9 @@
       le.setAttribute('x1',pa.x.toFixed(1)); le.setAttribute('y1',pa.y.toFixed(1));
       le.setAttribute('x2',pb.x.toFixed(1)); le.setAttribute('y2',pb.y.toFixed(1));
       le.setAttribute('class', 'edge' + (live ? ' live' : ''));
-      le.style.opacity = (live ? 0.85 : 0.28) * clamp((pa.f+pb.f)/2 - 0.35, 0.35, 1.2);
+      var df = clamp(((pa.f+pb.f)/2 - 0.62)*1.9, 0.12, 1);   // fog with distance
+      le.style.opacity = (live ? 0.95 : 0.22) * df;
+      le.style.strokeWidth = (live ? 2.4 : 0.9) * clamp(pf2(pa.f,pb.f),0.5,1.6);
     }
     // the confirmed trail is reprojected too, or it would float free of the graph
     trailEl.setAttribute('d', TRAIL.map(function(i,k){
@@ -959,7 +964,10 @@
     var into = seg(p, BEATS[want].at, BEATS[want].at + 0.045);
     var outof = 1 - seg(p, localTo - 0.035, localTo);
     beatEl.style.opacity = Math.min(into, outof);
-    beatEl.style.transform = 'translateY(calc(-50% + ' + ((1-into)*18).toFixed(1) + 'px))';
+    beatEl.style.transform =
+      'perspective(1200px) translateY(calc(-50% + ' + ((1-into)*20).toFixed(1) + 'px)) ' +
+      'rotateY(' + (7 + mx*3).toFixed(2) + 'deg) rotateX(' + (-my*2).toFixed(2) + 'deg) ' +
+      'translateZ(' + (into*40).toFixed(0) + 'px)';
   }
 
   /* ── the probe: interrogate any camera in the network ──────────────────
@@ -1009,6 +1017,7 @@
 
   var neuralSvg = document.querySelector('[data-neural]');
   lensEl = document.querySelector('[data-lens]');
+  var neuralWrap = document.querySelector('.neural');
   if(!reduce){
     window.addEventListener('mousemove', function(e){
       tmx = (e.clientX/window.innerWidth - .5)*2;
@@ -1086,6 +1095,12 @@
 
       if(a.stage){
         renderSearch(p);
+        // the mesh is ambience, not competition. It recedes while the camera
+        // graph is on screen, so only one network reads at a time.
+        if(neuralWrap){
+          var busy = (p > 0.001 && p < 0.999) ? 1 : 0;
+          neuralWrap.style.opacity = busy ? 0.12 : 1;
+        }
         // the whole field drifts with the cursor, Apple-style parallax
         a.stage.style.transform =
           'scale(' + mix(1.0,1.06,p) + ') translate3d(' + (mx*-16) + 'px,' + (my*-10) + 'px,0)';
