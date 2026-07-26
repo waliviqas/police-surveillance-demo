@@ -23,7 +23,7 @@
     --dim:#BCD6EE;
     --faint:#8FB2D2;
     --good:#34D399;
-    --bad:#FF5B5B;
+    --bad:#FF2A2A;
     --warn:#FB923C;
     /* glass, on dark: light film + luminous rim */
     --glass:linear-gradient(155deg,rgba(3,22,46,.62) 0%,rgba(5,34,66,.50) 55%,rgba(8,48,92,.56) 100%);
@@ -187,7 +187,7 @@
     background:linear-gradient(140deg,rgba(255,255,255,.30) 0%,rgba(255,255,255,.05) 26%,
       rgba(255,255,255,0) 46%,rgba(159,212,255,.10) 100%)}
   /* corner ticks: reads as an instrument, not a card */
-  .glass::before{content:"";position:absolute;inset:7px;pointer-events:none;z-index:2;opacity:.55;
+  .glass::before{content:"";position:absolute;inset:12px;pointer-events:none;z-index:2;opacity:.55;
     background:
       linear-gradient(var(--cy-300),var(--cy-300)) left top/11px 1px no-repeat,
       linear-gradient(var(--cy-300),var(--cy-300)) left top/1px 11px no-repeat,
@@ -198,14 +198,21 @@
       linear-gradient(var(--cy-300),var(--cy-300)) right bottom/11px 1px no-repeat,
       linear-gradient(var(--cy-300),var(--cy-300)) right bottom/1px 11px no-repeat}
 
-  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:44px}
-  .card{padding:28px 26px;opacity:0}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:52px}
+  .card{padding:44px 34px;opacity:0;border-radius:26px;min-height:210px;
+    display:flex;align-items:center;
+    transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s,border-color .35s}
+  .card:hover{transform:translateY(-6px) scale(1.015);
+    border-color:rgba(200,232,255,.7);
+    box-shadow:0 0 0 1px rgba(159,212,255,.4), 0 44px 90px -30px rgba(1,10,26,.98),
+               0 0 70px -26px rgba(var(--accent),.75)}
+  .card::after{border-radius:inherit}
   .card .num{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:12px;
     letter-spacing:.24em;color:var(--cy-400);margin-bottom:14px}
-  .card h3{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:19px;line-height:1.25;
-    margin-bottom:11px;letter-spacing:-.01em}
-  .card h3 b{color:var(--bad);font-weight:700;
-    text-shadow:0 0 22px rgba(255,91,91,.55)}
+  .card h3{font-family:'Space Grotesk',sans-serif;font-weight:600;
+    font-size:clamp(21px,2.05vw,32px);line-height:1.2;letter-spacing:-.02em;margin:0}
+  .card h3 b{color:var(--bad);font-weight:700;font-size:1.14em;
+    text-shadow:0 0 26px rgba(255,42,42,.75)}
   .card p{color:var(--dim);font-size:14px;line-height:1.68}
   .card p strong{color:var(--ink);font-weight:500}
 
@@ -382,7 +389,6 @@
   <div class="pin" style="align-items:center;justify-content:center;padding:0">
     <div style="position:relative;display:flex;flex-direction:column;align-items:center" data-title>
       <div class="line" id="introMark" style="font-size:clamp(46px,11vw,180px);font-weight:800;letter-spacing:-.055em"></div>
-      <div class="closeSub" data-sub style="margin-top:22px;opacity:0">Every camera, one search</div>
     </div>
   </div>
 </section>
@@ -414,21 +420,9 @@
       <span class="w"><i>The</i></span><span class="w hollow"><i>response</i></span><span class="w"><i>is</i></span><span class="w hot"><i>not.</i></span>
     </div>
     <div class="cards">
-      <div class="card glass" data-fade><div class="num">01</div>
-        <h3>The worst happened suddenly</h3>
-        <p>A child is separated on a platform. Someone walks out of a care home.
-        There is <strong>no warning and no plan</strong>, and nobody yet has the
-        whole picture.</p></div>
-      <div class="card glass" data-fade><div class="num">02</div>
-        <h3>In the chaos, shock breeds panic</h3>
-        <p>The people closest to it are the least able to act. Descriptions
-        conflict, memories blur, and the first minutes go to working out
-        <strong>what just happened</strong>.</p></div>
-      <div class="card glass" data-fade><div class="num">03</div>
-        <h3>The first response is <b>delayed</b></h3>
-        <p>By the time the call is made, the ground to search has outgrown the
-        people searching it. Someone on foot is inside <strong>0.8 mi²</strong>
-        after ten minutes and <strong>7 mi²</strong> after thirty.</p></div>
+      <div class="card glass" data-fade><h3>The worst happened suddenly</h3></div>
+      <div class="card glass" data-fade><h3>In the chaos, shock breeds panic</h3></div>
+      <div class="card glass" data-fade><h3>The first response is <b>delayed</b></h3></div>
     </div>
   </div>
 </section>
@@ -1106,7 +1100,10 @@ void main(){
      p:'The clock resets at the new position and the cone expands again, tighter and more confident. The confirmed path <strong>is written back into the graph.</strong>'}
   ];
   var BEAT_IN = 0.05, BEAT_OUT = 0.04;
-  var FADE_FROM = 0.56, FADE_STAGGER = 0.16, FADE_DUR = 0.16;
+  // Separated windows rather than an overlapping stagger. Each item finishes
+  // before the next begins, which is what lets a single card own a press.
+  // Width scales with the count, so a four-item act still lands before 0.86.
+  var FADE_FROM = 0.52, FADE_SPAN = 0.36;
   var beatEl = document.querySelector('[data-beat]');
   var beatH  = beatEl.querySelector('h3'), beatP = beatEl.querySelector('p');
   var beatIdx = -1;
@@ -1368,7 +1365,7 @@ void main(){
           b.style.filter = 'blur(' + ((1-t)*16).toFixed(1) + 'px)';
           b.style.opacity = mix(0.14, 1, t);
         });
-        a.sub.style.opacity = mix(0.1, 1, ease(seg(p,0.34,0.6)));
+        if(a.sub) a.sub.style.opacity = mix(0.1, 1, ease(seg(p,0.34,0.6)));
         var ex = ease(seg(p,0.78,1));
         a.title.style.transform = 'scale(' + mix(1,1.12,ex) + ')';
         a.title.style.opacity = 1-ex;
@@ -1392,10 +1389,9 @@ void main(){
       if(a.fades.length){
         var fn = a.fades.length;
         a.fades.forEach(function(f,i){
-          // FADE_FROM sits past the headline stop and the last item lands
-          // before the content stop, so no stop can catch a card mid-arrival.
-          var a0 = FADE_FROM + (i/fn)*FADE_STAGGER;
-          var t  = ease(seg(p, a0, a0 + FADE_DUR));
+          var a0  = FADE_FROM + (i/fn)*FADE_SPAN;
+          var dur = (FADE_SPAN/fn)*0.75;          // 25% gap between windows
+          var t   = ease(seg(p, a0, a0 + dur));
           f.style.opacity = t;
           f.style.transform = 'translateY(' + ((1-t)*24) + 'px)';
         });
@@ -1465,17 +1461,19 @@ void main(){
 
   var STEPS = [
     {a:'act-title',   p:0.68, of:'wordmark and tagline'},
-    {a:'act-hero',    p:0.90, of:'headline and premise together'},
-    {a:'act-problem', p:0.50, of:'headline, fully drawn'},
-    {a:'act-problem', p:0.90, of:'all three cards'},
+    {a:'act-hero',    p:0.88, of:'headline and premise together'},
+    {a:'act-problem', p:0.48, of:'headline, fully drawn'},
+    {a:'act-problem', p:0.625, of:'card one'},
+    {a:'act-problem', p:0.745, of:'card two'},
+    {a:'act-problem', p:0.93, of:'card three'},
     SEARCH_STOPS[0], SEARCH_STOPS[1], SEARCH_STOPS[2], SEARCH_STOPS[3],
     {a:'act-how',     p:0.125,of:'describe them'},
     {a:'act-how',     p:0.375,of:'every edge is a travel time'},
     {a:'act-how',     p:0.625,of:'the alert is a walker'},
     {a:'act-how',     p:0.875,of:'on a hit it re-blooms'},
-    {a:'act-privacy', p:0.50, of:'headline, fully drawn'},
-    {a:'act-privacy', p:0.90, of:'all three commitments'},
-    {a:'act-close',   p:0.90, of:'wordmark, tagline and team'}
+    {a:'act-privacy', p:0.48, of:'headline, fully drawn'},
+    {a:'act-privacy', p:0.93, of:'all three commitments'},
+    {a:'act-close',   p:0.93, of:'wordmark, tagline and team'}
   ];
 
   var step = 0, tweening = null;
