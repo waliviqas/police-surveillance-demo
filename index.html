@@ -615,7 +615,7 @@
   (function(){
     var cv = document.getElementById('gl');
     if(!cv) return;
-    var gl = cv.getContext('webgl', {antialias:false, alpha:false,
+    var gl = cv.getContext('webgl', {antialias:true, alpha:false,
                                      powerPreference:'high-performance'});
     if(!gl) return;                                   // CSS gradient shows through
     gl.getExtension('OES_standard_derivatives');
@@ -883,6 +883,13 @@ void main(){
   // vignette, deeper than the standalone test: copy sits on top of this
   col *= 1.0 - 0.30*dot(uv*vec2(0.72,1.0), uv*vec2(0.72,1.0));
 
+  // Triangular dither, one 255th of a step. Smooth gradients quantise to 8-bit
+  // and show as blotches; a sub-LSB perturbation breaks the contour without
+  // being visible as noise. This is the real fix for banding, not more blur.
+  float d1 = hash21(gl_FragCoord.xy);
+  float d2 = hash21(gl_FragCoord.xy + 17.7);
+  col += (d1 - d2) / 255.0;
+
   // u_dim is driven by scroll. The glass is the hero on the opening card and
   // steps back once the camera graph and the copy need the screen.
   col *= u_dim;
@@ -913,12 +920,18 @@ void main(){
         uM   = gl.getUniformLocation(pr,'u_m'),
         uD   = gl.getUniformLocation(pr,'u_dim');
 
-    // half resolution: the image is soft by nature, so nobody can tell, and it
-    // quarters the fragment work
-    var SCALE = 0.75, gmx = 0, gmy = 0, tmx2 = 0, tmy2 = 0;
+    // Resolution was the whole grain problem. This was rendering at 0.75x CSS
+    // pixels while ignoring devicePixelRatio, so on a 2x display it was 0.375x
+    // device resolution stretched back up. Render at real device pixels now,
+    // capped by a fragment budget because this shader is not cheap: honour dpr
+    // up to 2x, then back off only if that would exceed the budget.
+    var BUDGET = 2600000, gmx = 0, gmy = 0, tmx2 = 0, tmy2 = 0;
     function size(){
-      cv.width  = Math.max(1, Math.round(innerWidth  * SCALE));
-      cv.height = Math.max(1, Math.round(innerHeight * SCALE));
+      var dpr = Math.min(devicePixelRatio || 1, 2);
+      var w = innerWidth * dpr, h = innerHeight * dpr;
+      var k = Math.min(1, Math.sqrt(BUDGET / Math.max(w*h, 1)));
+      cv.width  = Math.max(1, Math.round(w*k));
+      cv.height = Math.max(1, Math.round(h*k));
       gl.viewport(0,0,cv.width,cv.height);
       gl.uniform2f(uRes, cv.width, cv.height);
     }
