@@ -70,8 +70,18 @@
     -webkit-mask-image:radial-gradient(125% 85% at 50% 45%,#000 15%,transparent 82%);
             mask-image:radial-gradient(125% 85% at 50% 45%,#000 15%,transparent 82%)}
   .neural svg{width:100%;height:100%;display:block}
-  .neural .syn{stroke:rgba(120,200,235,.16);stroke-width:.6;fill:none}
-  .neural .cell{fill:rgba(160,220,245,.30)}
+  .neural .syn{stroke:rgba(140,215,245,.85);stroke-width:.7;fill:none}
+  .neural .cell{fill:rgba(185,235,250,.9)}
+  .neural .mbase{opacity:.9}
+  /* the clarity lens: the bright copy is only visible where you are looking */
+  .neural .mbright{opacity:.95;
+    -webkit-mask-image:radial-gradient(circle 260px at var(--cx,50%) var(--cy,50%),
+      #000 0%,rgba(0,0,0,.45) 42%,transparent 72%);
+            mask-image:radial-gradient(circle 260px at var(--cx,50%) var(--cy,50%),
+      #000 0%,rgba(0,0,0,.45) 42%,transparent 72%)}
+  .neural .mbright .syn{stroke:rgba(var(--accent),.85);stroke-width:.8}
+  .neural .mbright .cell{fill:rgba(207,250,254,.95)}
+  .neural svg{transition:none}
   .neural .fire{stroke:rgba(var(--accent),.95);stroke-width:1.5;fill:none;
     stroke-linecap:round;filter:drop-shadow(0 0 5px rgba(var(--accent),.9));
     animation:fire var(--fd) linear infinite;animation-delay:var(--fdel)}
@@ -227,6 +237,16 @@
   #act-search .pin{padding:0}
   .stage{position:absolute;inset:0}
   .stage svg{position:absolute;inset:0;width:100%;height:100%}
+  .stage{pointer-events:auto}
+  .node{cursor:crosshair}
+  .probe{position:absolute;z-index:6;pointer-events:none;opacity:0;
+    font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.5;
+    padding:9px 12px;border:1px solid rgba(var(--accent),.5);
+    background:rgba(4,10,20,.86);backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);white-space:nowrap;
+    box-shadow:0 0 22px -6px rgba(var(--accent),.7);transform:translate(14px,-50%)}
+  .probe b{color:var(--cy-300);font-weight:500}
+  .probe u{display:block;text-decoration:none;color:var(--faint);margin-top:3px}
   .edge{stroke:rgba(120,190,230,.14);stroke-width:1;fill:none}
   .edge.live{stroke:url(#edgeGrad);stroke-width:1.8}
   .node rect.core{fill:#0B1725;stroke:rgba(140,200,230,.35);stroke-width:1.2}
@@ -459,6 +479,7 @@
       </svg>
     </div>
 
+    <div class="probe" data-probe></div>
     <div class="beat glass" data-beat>
       <h3></h3><p></p>
     </div>
@@ -611,60 +632,88 @@
   });
 
   /* ── the ambient neural mesh ────────────────────────────────────────────
-     Layered nodes, fully connected between adjacent layers, drawn once and
-     left alone. A handful of synapses carry a travelling pulse so the mesh
-     reads as thinking rather than as decoration. */
+     Grown, not drawn: layers wander, nodes jitter off their row, synapses
+     connect probabilistically, and a few skip a layer entirely. A perfectly
+     ruled net reads as a diagram; this reads as tissue.
+     Two copies are stacked — a faint base, and a bright one revealed only
+     under the cursor, so moving the pointer brings that patch into focus. */
+  var meshNodes = [], meshBright = null;
   (function(){
     var svg = document.querySelector('[data-neural]');
     if(!svg) return;
     var NS = 'http://www.w3.org/2000/svg';
-    var LAYERS = [5, 9, 11, 9, 5], layer = [], x0 = -60, span = 1720;
-    LAYERS.forEach(function(count, li){
-      var col = [], x = x0 + (li/(LAYERS.length-1))*span;
+    var ms = 918273645;
+    function mr(){ ms = (ms*1103515245 + 12345) % 2147483648; return ms/2147483648; }
+
+    var layer = [], LN = 6;
+    for(var li=0; li<LN; li++){
+      var count = 5 + Math.floor(mr()*7);             // 5..11, uneven
+      var x = -80 + (li/(LN-1))*1760 + (mr()-0.5)*130; // the column itself wanders
+      var col = [];
       for(var i=0;i<count;i++){
-        col.push({x: x, y: 110 + (i+0.5)*(680/count) + (i%2?18:-18)});
+        col.push({
+          x: x + (mr()-0.5)*150,
+          y: 40 + (i+0.5)*(820/count) + (mr()-0.5)*130,
+          r: 1.6 + mr()*2.6,
+          o: 0.14 + mr()*0.34,
+          d: 0.3 + mr()*0.9                            // parallax depth
+        });
       }
       layer.push(col);
-    });
-    var syn = document.createElementNS(NS,'g');
-    var cells = document.createElementNS(NS,'g');
-    var fires = document.createElementNS(NS,'g');
+    }
     var links = [];
     for(var l=0;l<layer.length-1;l++){
       layer[l].forEach(function(a){
         layer[l+1].forEach(function(b){
-          var ln = document.createElementNS(NS,'line');
-          ln.setAttribute('x1',a.x.toFixed(1)); ln.setAttribute('y1',a.y.toFixed(1));
-          ln.setAttribute('x2',b.x.toFixed(1)); ln.setAttribute('y2',b.y.toFixed(1));
-          ln.setAttribute('class','syn');
-          syn.appendChild(ln);
-          links.push({a:a,b:b});
+          if(mr() > 0.62) return;                      // sparse, not complete
+          links.push({a:a,b:b,o:0.06 + mr()*0.20});
         });
+        if(l+2 < layer.length && mr() > 0.78){         // occasional skip
+          var far = layer[l+2][Math.floor(mr()*layer[l+2].length)];
+          links.push({a:a,b:far,o:0.05 + mr()*0.10});
+        }
       });
     }
-    layer.forEach(function(col){
-      col.forEach(function(n){
+
+    function build(cls){
+      var g = document.createElementNS(NS,'g');
+      g.setAttribute('class', cls);
+      links.forEach(function(k){
+        var ln = document.createElementNS(NS,'line');
+        ln.setAttribute('x1',k.a.x.toFixed(1)); ln.setAttribute('y1',k.a.y.toFixed(1));
+        ln.setAttribute('x2',k.b.x.toFixed(1)); ln.setAttribute('y2',k.b.y.toFixed(1));
+        ln.setAttribute('class','syn');
+        ln.style.opacity = (0.24 + k.o*1.5).toFixed(3);
+        g.appendChild(ln);
+      });
+      layer.forEach(function(col){ col.forEach(function(n){
         var c = document.createElementNS(NS,'circle');
         c.setAttribute('cx',n.x.toFixed(1)); c.setAttribute('cy',n.y.toFixed(1));
-        c.setAttribute('r','2.6'); c.setAttribute('class','cell');
-        cells.appendChild(c);
-      });
-    });
-    // a fixed scatter of firing synapses, spread across the mesh
-    for(var f=0; f<18; f++){
-      var lk = links[Math.floor((f*97 + 13) % links.length)];
+        c.setAttribute('r',n.r.toFixed(2)); c.setAttribute('class','cell');
+        c.style.opacity = (0.4 + n.o).toFixed(3);
+        g.appendChild(c);
+      }); });
+      return g;
+    }
+
+    var base = build('mbase');
+    meshBright = build('mbright');
+    var fires = document.createElementNS(NS,'g');
+    for(var f=0; f<20; f++){
+      var lk = links[Math.floor(mr()*links.length)];
       var len = Math.hypot(lk.b.x-lk.a.x, lk.b.y-lk.a.y);
       var ln2 = document.createElementNS(NS,'line');
       ln2.setAttribute('x1',lk.a.x.toFixed(1)); ln2.setAttribute('y1',lk.a.y.toFixed(1));
       ln2.setAttribute('x2',lk.b.x.toFixed(1)); ln2.setAttribute('y2',lk.b.y.toFixed(1));
       ln2.setAttribute('class','fire');
-      ln2.style.strokeDasharray = '14 ' + len.toFixed(0);
-      ln2.style.setProperty('--flen', (len+14).toFixed(0));
-      ln2.style.setProperty('--fd', (2.6 + (f%5)*0.9).toFixed(1) + 's');
-      ln2.style.setProperty('--fdel', (-(f*0.63).toFixed(2)) + 's');
+      ln2.style.strokeDasharray = '13 ' + len.toFixed(0);
+      ln2.style.setProperty('--flen',(len+13).toFixed(0));
+      ln2.style.setProperty('--fd',(2.2 + mr()*4.4).toFixed(1)+'s');
+      ln2.style.setProperty('--fdel',(-(mr()*7).toFixed(2))+'s');
       fires.appendChild(ln2);
     }
-    svg.appendChild(syn); svg.appendChild(fires); svg.appendChild(cells);
+    svg.appendChild(base); svg.appendChild(meshBright); svg.appendChild(fires);
+    meshNodes = layer;
   })();
 
   /* ══════════════════════════════════════════════════════════════════════
@@ -768,9 +817,13 @@
     core.__base = base; halo.__cx = n.x; halo.__cy = n.y;
     core.setAttribute('x', n.x-base/2); core.setAttribute('y', n.y-base/2);
     core.setAttribute('width', base); core.setAttribute('height', base);
-    g.appendChild(halo); g.appendChild(core);
+    var hit = document.createElementNS(SVGNS,'rect');
+    hit.setAttribute('x', n.x-17); hit.setAttribute('y', n.y-17);
+    hit.setAttribute('width',34); hit.setAttribute('height',34);
+    hit.setAttribute('fill','transparent'); hit.__i = i;
+    g.appendChild(halo); g.appendChild(core); g.appendChild(hit);
     gNodes.appendChild(g);
-    return {g:g, halo:halo, core:core};
+    return {g:g, halo:halo, core:core, hit:hit};
   });
   var trailEl = document.createElementNS(SVGNS,'path');
   trailEl.setAttribute('d', TRAIL.map(function(i,k){
@@ -809,6 +862,7 @@
     return m + ':' + (s<10?'0':'') + s;
   }
 
+  var lastT1 = 0, lastT2 = -1;
   function renderSearch(p){
     // p 0→1 across the act. The hit lands at 0.56, then the second bloom runs.
     var phase1 = seg(p, 0.04, 0.56);
@@ -818,6 +872,7 @@
     var t1 = phase1 * A1.max * 1.04;
     var t2 = phase2 * A2.max * 0.72;
 
+    lastT1 = t1; lastT2 = phase2>0 ? t2 : -1;
     var reached = 0, frontier = 0;
     for(var i=0;i<N.length;i++){
       var d1 = A1.node[i], d2 = A2.node[i];
@@ -881,6 +936,31 @@
     beatEl.style.transform = 'translateY(calc(-50% + ' + ((1-into)*18).toFixed(1) + 'px))';
   }
 
+  /* ── the probe: interrogate any camera in the network ──────────────────
+     A live system should answer questions. Hovering a camera says what it is,
+     whether the frontier has reached it, and if not, when it will. */
+  var probe = document.querySelector('[data-probe]');
+  var stageEl = document.querySelector('[data-stage]');
+  function pad(n){ return (n<10?'0':'') + n; }
+  nodeEls.forEach(function(el,i){
+    el.hit.addEventListener('mouseenter', function(){
+      var d1 = A1.node[i], d2 = A2.node[i];
+      var on = d1 <= lastT1 || (lastT2 >= 0 && d2 <= lastT2);
+      var eta = Math.max(0, Math.round((Math.min(d1, lastT2>=0?d2:Infinity) -
+                                        Math.max(lastT1, lastT2)) / 2.4));
+      probe.innerHTML =
+        '<b>CAM-' + pad(i) + '</b>' +
+        (i === ORIGIN ? '<u>point last seen</u>'
+         : on ? '<u>watching &middot; in frontier</u>'
+         : '<u>reachable in ' + Math.floor(eta/60) + ':' + pad(eta%60) + '</u>');
+      var r = el.core.getBoundingClientRect(), s = stageEl.getBoundingClientRect();
+      probe.style.left = (r.left - s.left + r.width) + 'px';
+      probe.style.top  = (r.top  - s.top + r.height/2) + 'px';
+      probe.style.opacity = 1;
+    });
+    el.hit.addEventListener('mouseleave', function(){ probe.style.opacity = 0; });
+  });
+
   /* ── acts ───────────────────────────────────────────────────────────── */
   var acts = [].slice.call(document.querySelectorAll('.act')).map(function(el){
     return {
@@ -901,10 +981,17 @@
                b:document.querySelector('.fb.b'), l:document.querySelector('.fb.l')};
   var lastY = window.pageYOffset, vel = 0;
 
+  var neuralSvg = document.querySelector('[data-neural]');
   if(!reduce){
     window.addEventListener('mousemove', function(e){
       tmx = (e.clientX/window.innerWidth - .5)*2;
       tmy = (e.clientY/window.innerHeight - .5)*2;
+      // the clarity lens tracks the pointer directly, no easing, so the mesh
+      // resolves under the cursor the instant it moves
+      if(meshBright){
+        meshBright.style.setProperty('--cx', (e.clientX/window.innerWidth*100).toFixed(2)+'%');
+        meshBright.style.setProperty('--cy', (e.clientY/window.innerHeight*100).toFixed(2)+'%');
+      }
       onScroll();
     }, {passive:true});
   }
@@ -915,6 +1002,10 @@
     mx += (tmx-mx)*0.08; my += (tmy-my)*0.08;
     root.style.setProperty('--mx', mx.toFixed(3));
     root.style.setProperty('--my', my.toFixed(3));
+    if(neuralSvg){
+      neuralSvg.style.transform =
+        'translate3d(' + (mx*-26).toFixed(1) + 'px,' + (my*-16).toFixed(1) + 'px,0) scale(1.05)';
+    }
     var docH = document.documentElement.scrollHeight - vh;
     var gp = docH>0 ? window.pageYOffset/docH : 0;
     rail.style.width = (gp*100) + '%';
