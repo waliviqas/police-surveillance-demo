@@ -71,7 +71,7 @@
     -webkit-mask-image:radial-gradient(125% 85% at 50% 45%,#000 15%,transparent 82%);
             mask-image:radial-gradient(125% 85% at 50% 45%,#000 15%,transparent 82%)}
   .neural svg{width:100%;height:100%;display:block}
-  .neural .syn{stroke:rgba(140,215,245,.85);stroke-width:.7;fill:none}
+  .neural .syn{stroke:rgba(150,220,248,.8);stroke-width:.6;fill:none}
   .neural .cell{fill:rgba(185,235,250,.9)}
   .neural .mbase{opacity:.9}
   /* the clarity lens: one blended disc that brightens the mesh beneath it.
@@ -82,7 +82,7 @@
     background:radial-gradient(circle,rgba(var(--accent),.30) 0%,
       rgba(var(--accent),.13) 38%,transparent 70%);
     will-change:transform}
-  .neural .fire{stroke:rgba(var(--accent),1);stroke-width:2.2;fill:none;
+  .neural .fire{stroke:rgba(var(--accent),1);stroke-width:1.8;fill:none;
     stroke-linecap:round;opacity:.85;
     animation:fire var(--fd) linear infinite;animation-delay:var(--fdel)}
   @keyframes fire{from{stroke-dashoffset:var(--flen)}to{stroke-dashoffset:0}}
@@ -623,12 +623,13 @@
     s.style.animationDelay = (-i*3.4)+'s';
   });
 
-  /* ── the ambient neural mesh ────────────────────────────────────────────
-     Grown, not drawn: layers wander, nodes jitter off their row, synapses
-     connect probabilistically, and a few skip a layer entirely. A perfectly
-     ruled net reads as a diagram; this reads as tissue.
-     Two copies are stacked — a faint base, and a bright one revealed only
-     under the cursor, so moving the pointer brings that patch into focus. */
+  /* ── the web ────────────────────────────────────────────────────────────
+     Not a mesh. A real orb web has two parts: straight radial threads
+     anchored at the hub, and a capture spiral strung between them that sags
+     inward under its own weight. That structure is what makes it legible
+     instead of noisy, and the sag is what stops it looking like a dartboard.
+     Spokes are unevenly spaced and rings jitter, because a spider is not a
+     compass. */
   var meshNodes = [], lensEl = null;
   (function(){
     var svg = document.querySelector('[data-neural]');
@@ -637,74 +638,91 @@
     var ms = 918273645;
     function mr(){ ms = (ms*1103515245 + 12345) % 2147483648; return ms/2147483648; }
 
-    var layer = [], LN = 6;
-    for(var li=0; li<LN; li++){
-      var count = 5 + Math.floor(mr()*7);             // 5..11, uneven
-      var x = -80 + (li/(LN-1))*1760 + (mr()-0.5)*130; // the column itself wanders
-      var col = [];
-      for(var i=0;i<count;i++){
-        col.push({
-          x: x + (mr()-0.5)*150,
-          y: 40 + (i+0.5)*(820/count) + (mr()-0.5)*130,
-          r: 1.6 + mr()*2.6,
-          o: 0.14 + mr()*0.34,
-          d: 0.3 + mr()*0.9                            // parallax depth
-        });
-      }
-      layer.push(col);
+    var HUB = {x: 795, y: 430}, SPOKES = 15, RINGS = 8;
+    var ang = [], acc = 0;
+    for(var i=0;i<SPOKES;i++){ acc += 1 + (mr()-0.5)*0.5; ang.push(acc); }
+    var k = (Math.PI*2)/acc;
+    ang = ang.map(function(a){ return a*k - Math.PI/2; });   // uneven, still closes
+
+    var rad = [];
+    for(var r=0;r<RINGS;r++){
+      rad.push(96 * Math.pow(r+1, 1.28) * (0.92 + mr()*0.18));
     }
-    var links = [];
-    for(var l=0;l<layer.length-1;l++){
-      layer[l].forEach(function(a){
-        layer[l+1].forEach(function(b){
-          if(mr() > 0.62) return;                      // sparse, not complete
-          links.push({a:a,b:b,o:0.06 + mr()*0.20});
-        });
-        if(l+2 < layer.length && mr() > 0.78){         // occasional skip
-          var far = layer[l+2][Math.floor(mr()*layer[l+2].length)];
-          links.push({a:a,b:far,o:0.05 + mr()*0.10});
-        }
-      });
+    var P = [];                                              // P[spoke][ring]
+    for(var si=0; si<SPOKES; si++){
+      var col = [];
+      for(var ri=0; ri<RINGS; ri++){
+        var a = ang[si] + (mr()-0.5)*0.06;
+        var rr = rad[ri] * (0.96 + mr()*0.09);
+        col.push({x: HUB.x + Math.cos(a)*rr, y: HUB.y + Math.sin(a)*rr*0.80});
+      }
+      P.push(col);
     }
 
-    function build(cls){
-      var g = document.createElementNS(NS,'g');
-      g.setAttribute('class', cls);
-      links.forEach(function(k){
-        var ln = document.createElementNS(NS,'line');
-        ln.setAttribute('x1',k.a.x.toFixed(1)); ln.setAttribute('y1',k.a.y.toFixed(1));
-        ln.setAttribute('x2',k.b.x.toFixed(1)); ln.setAttribute('y2',k.b.y.toFixed(1));
-        ln.setAttribute('class','syn');
-        ln.style.opacity = (0.24 + k.o*1.5).toFixed(3);
-        g.appendChild(ln);
-      });
-      layer.forEach(function(col){ col.forEach(function(n){
+    var web = document.createElementNS(NS,'g');
+    web.setAttribute('class','mbase');
+    function line(a,b,o){
+      var l = document.createElementNS(NS,'line');
+      l.setAttribute('x1',a.x.toFixed(1)); l.setAttribute('y1',a.y.toFixed(1));
+      l.setAttribute('x2',b.x.toFixed(1)); l.setAttribute('y2',b.y.toFixed(1));
+      l.setAttribute('class','syn'); l.style.opacity = o.toFixed(3);
+      web.appendChild(l);
+    }
+    // radial threads: hub outward, unbroken
+    for(var si2=0; si2<SPOKES; si2++){
+      line(HUB, P[si2][0], 0.5);
+      for(var ri2=0; ri2<RINGS-1; ri2++) line(P[si2][ri2], P[si2][ri2+1], 0.52 - ri2*0.03);
+    }
+    // capture spiral: chords between neighbouring spokes, sagging toward the hub
+    var spiral = [];
+    for(var ri3=0; ri3<RINGS; ri3++){
+      for(var si3=0; si3<SPOKES; si3++){
+        if(ri3 > 2 && mr() > 0.93) continue;              // a few strands missing
+        var a1 = P[si3][ri3], b1 = P[(si3+1)%SPOKES][ri3];
+        var mxp = (a1.x+b1.x)/2, myp = (a1.y+b1.y)/2;
+        var sag = 0.90 - mr()*0.05;                        // pulled in under weight
+        var cxp = HUB.x + (mxp-HUB.x)*sag, cyp = HUB.y + (myp-HUB.y)*sag;
+        var pth = document.createElementNS(NS,'path');
+        pth.setAttribute('d','M'+a1.x.toFixed(1)+' '+a1.y.toFixed(1)+
+                             ' Q'+cxp.toFixed(1)+' '+cyp.toFixed(1)+
+                             ' '+b1.x.toFixed(1)+' '+b1.y.toFixed(1));
+        pth.setAttribute('class','syn');
+        pth.style.opacity = (0.44 - ri3*0.025).toFixed(3);
+        web.appendChild(pth);
+        spiral.push({a:a1,b:b1,c:{x:cxp,y:cyp}});
+      }
+    }
+    // anchor points, only where threads actually meet
+    for(var si4=0; si4<SPOKES; si4++){
+      for(var ri4=0; ri4<RINGS; ri4++){
+        if((si4+ri4) % 2) continue;
+        var n = P[si4][ri4];
         var c = document.createElementNS(NS,'circle');
         c.setAttribute('cx',n.x.toFixed(1)); c.setAttribute('cy',n.y.toFixed(1));
-        c.setAttribute('r',n.r.toFixed(2)); c.setAttribute('class','cell');
-        c.style.opacity = (0.4 + n.o).toFixed(3);
-        g.appendChild(c);
-      }); });
-      return g;
+        c.setAttribute('r',(1.5 + mr()*1.5).toFixed(2)); c.setAttribute('class','cell');
+        c.style.opacity = (0.42 + mr()*0.3).toFixed(3);
+        web.appendChild(c);
+      }
     }
 
-    var base = build('mbase');
+    // something travels the web now and then, along the spiral
     var fires = document.createElementNS(NS,'g');
-    for(var f=0; f<9; f++){
-      var lk = links[Math.floor(mr()*links.length)];
-      var len = Math.hypot(lk.b.x-lk.a.x, lk.b.y-lk.a.y);
-      var ln2 = document.createElementNS(NS,'line');
-      ln2.setAttribute('x1',lk.a.x.toFixed(1)); ln2.setAttribute('y1',lk.a.y.toFixed(1));
-      ln2.setAttribute('x2',lk.b.x.toFixed(1)); ln2.setAttribute('y2',lk.b.y.toFixed(1));
-      ln2.setAttribute('class','fire');
-      ln2.style.strokeDasharray = '13 ' + len.toFixed(0);
-      ln2.style.setProperty('--flen',(len+13).toFixed(0));
-      ln2.style.setProperty('--fd',(2.2 + mr()*4.4).toFixed(1)+'s');
-      ln2.style.setProperty('--fdel',(-(mr()*7).toFixed(2))+'s');
-      fires.appendChild(ln2);
+    for(var f=0; f<7; f++){
+      var sp = spiral[Math.floor(mr()*spiral.length)];
+      var pth2 = document.createElementNS(NS,'path');
+      pth2.setAttribute('d','M'+sp.a.x.toFixed(1)+' '+sp.a.y.toFixed(1)+
+                            ' Q'+sp.c.x.toFixed(1)+' '+sp.c.y.toFixed(1)+
+                            ' '+sp.b.x.toFixed(1)+' '+sp.b.y.toFixed(1));
+      pth2.setAttribute('class','fire');
+      var len = Math.hypot(sp.b.x-sp.a.x, sp.b.y-sp.a.y) * 1.15;
+      pth2.style.strokeDasharray = '11 ' + len.toFixed(0);
+      pth2.style.setProperty('--flen',(len+11).toFixed(0));
+      pth2.style.setProperty('--fd',(2.4 + mr()*3.4).toFixed(1)+'s');
+      pth2.style.setProperty('--fdel',(-(mr()*6).toFixed(2))+'s');
+      fires.appendChild(pth2);
     }
-    svg.appendChild(base); svg.appendChild(fires);
-    meshNodes = layer;
+    svg.appendChild(web); svg.appendChild(fires);
+    meshNodes = P;
   })();
 
   /* ══════════════════════════════════════════════════════════════════════
