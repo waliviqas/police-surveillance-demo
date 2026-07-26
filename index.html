@@ -224,7 +224,7 @@
   .stage svg{position:absolute;inset:0;width:100%;height:100%}
   .stage{pointer-events:auto}
   .node{cursor:crosshair}
-  .probe{position:absolute;z-index:6;pointer-events:none;opacity:0;
+  .probe{position:absolute;z-index:6;pointer-events:none;opacity:0;border-radius:14px;
     font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.5;
     padding:9px 12px;border:1px solid rgba(var(--accent),.5);
     background:rgba(4,10,20,.86);backdrop-filter:blur(8px);
@@ -234,17 +234,20 @@
   .probe u{display:block;text-decoration:none;color:var(--faint);margin-top:3px}
   .edge{stroke:rgba(2,26,54,.42);stroke-width:1.1;fill:none}
   .edge.live{stroke:url(#edgeGrad);stroke-width:2.4}
-  .node rect.core{fill:#02182F;stroke:rgba(2,26,54,.55);stroke-width:1}
-  .node rect.halo{fill:none;stroke:#02182F;stroke-width:2.8;opacity:0}
+  .node circle.core{fill:#02182F;stroke:rgba(2,26,54,.55);stroke-width:1}
+  .node circle.halo{fill:none;stroke:#02182F;stroke-width:2.8;opacity:0}
   .readout{position:absolute;left:6vw;bottom:8vh;display:flex;gap:30px;flex-wrap:wrap;z-index:3;
-    padding:16px 24px;background:rgba(3,22,46,.58);border:1px solid rgba(200,232,255,.26);
+    padding:18px 28px;background:rgba(3,22,46,.58);border:1px solid rgba(200,232,255,.26);
+    border-radius:22px;
     backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
   .readout .k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
   .readout .v{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(22px,2.4vw,34px);
     letter-spacing:-.03em;color:var(--ink)}
   .readout .v.cy{background:linear-gradient(120deg,var(--cy-300),var(--vi-400));
     -webkit-background-clip:text;background-clip:text;color:transparent}
-  .beat{position:absolute;left:5vw;top:50%;max-width:min(400px,32vw);padding:28px 28px;z-index:3;opacity:0}
+  .beat{position:absolute;left:5vw;top:50%;max-width:min(400px,32vw);padding:30px 30px;z-index:3;opacity:0;
+    border-radius:28px}
+  .beat.glass::before{content:none}
   .beat h3{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(24px,2.8vw,40px);
     letter-spacing:-.035em;line-height:1.05;margin-bottom:14px}
   .beat h3 em{font-style:normal;background:linear-gradient(120deg,var(--cy-300),var(--vi-400));
@@ -252,7 +255,8 @@
   .beat p{color:var(--dim);font-size:15px;line-height:1.7}
   .beat p strong{color:var(--ink);font-weight:500}
   .clock{position:absolute;right:6vw;top:16vh;text-align:right;z-index:3;
-    padding:14px 22px;background:rgba(3,22,46,.58);border:1px solid rgba(200,232,255,.26);
+    padding:16px 26px;background:rgba(3,22,46,.58);border:1px solid rgba(200,232,255,.26);
+    border-radius:22px;
     backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
   .clock .t{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(30px,4vw,64px);
     letter-spacing:-.04em;line-height:1;color:var(--ink)}
@@ -1051,14 +1055,15 @@ void main(){
   var nodeEls = N.map(function(n,i){
     var g = document.createElementNS(SVGNS,'g');
     g.setAttribute('class','node');
-    var halo = document.createElementNS(SVGNS,'rect');
+    var halo = document.createElementNS(SVGNS,'circle');
     halo.setAttribute('class','halo');
-    var core = document.createElementNS(SVGNS,'rect');
+    var core = document.createElementNS(SVGNS,'circle');
     core.setAttribute('class','core');
-    var base = (i===ORIGIN||i===HIT) ? 11 : 7;
+    // origin and sighting are deliberately much larger than the rest
+    var base = (i===ORIGIN||i===HIT) ? 18 : 9;
     core.__base = base; halo.__cx = n.x; halo.__cy = n.y;
-    core.setAttribute('x', n.x-base/2); core.setAttribute('y', n.y-base/2);
-    core.setAttribute('width', base); core.setAttribute('height', base);
+    core.setAttribute('cx', n.x); core.setAttribute('cy', n.y);
+    core.setAttribute('r', base/2);
     var hit = document.createElementNS(SVGNS,'rect');
     hit.setAttribute('x', n.x-17); hit.setAttribute('y', n.y-17);
     hit.setAttribute('width',34); hit.setAttribute('height',34);
@@ -1090,8 +1095,8 @@ void main(){
 
   /* the four beats of the story */
   var BEATS = [
-    {at:0.02, h:'14:32.<br><em>Last seen.</em>',
-     p:'A search opens at the point last seen. One node, one description, a clock starting at zero. <strong>Nothing else is watching yet.</strong>'},
+    {at:0.02, h:'Crime is<br><em>detected.</em>',
+     p:'A search opens where it happened. One node, one description, a clock starting at zero. <strong>Nothing else is watching yet.</strong>'},
     {at:0.24, h:'The cone<br><em>expands.</em>',
      p:'The walker moves outward along edges it could have covered by now. Cameras light up <strong>in the order a person could actually reach them</strong>, not by distance.'},
     {at:0.56, h:'A hit,<br><em>nine minutes out.</em>',
@@ -1168,17 +1173,15 @@ void main(){
       el.core.style.stroke = on ? '#02182F' : 'rgba(2,26,54,.45)';
       el.core.style.strokeWidth = on ? 2 : 1;
       var px = PJ[i].x, py = PJ[i].y, pf = PJ[i].f;
-      var hs = (16 + fresh*72) * pf;             // the frontier ring, squared
-      el.halo.setAttribute('x', (px - hs/2).toFixed(1));
-      el.halo.setAttribute('y', (py - hs/2).toFixed(1));
-      el.halo.setAttribute('width', hs.toFixed(1));
-      el.halo.setAttribute('height', hs.toFixed(1));
+      var hs = (16 + fresh*72) * pf;             // the frontier ring
+      el.halo.setAttribute('cx', px.toFixed(1));
+      el.halo.setAttribute('cy', py.toFixed(1));
+      el.halo.setAttribute('r', (hs/2).toFixed(1));
       el.halo.style.opacity = on ? fresh*0.9 : 0;
       var cs = el.core.__base * (1 + (on ? fresh*0.85 : 0)) * pf;
-      el.core.setAttribute('x', (px - cs/2).toFixed(2));
-      el.core.setAttribute('y', (py - cs/2).toFixed(2));
-      el.core.setAttribute('width', cs.toFixed(2));
-      el.core.setAttribute('height', cs.toFixed(2));
+      el.core.setAttribute('cx', px.toFixed(2));
+      el.core.setAttribute('cy', py.toFixed(2));
+      el.core.setAttribute('r', (cs/2).toFixed(2));
       el.hit.setAttribute('x', (px-17).toFixed(1));
       el.hit.setAttribute('y', (py-17).toFixed(1));
       // nearer cameras read brighter, which is what sells the depth
@@ -1186,10 +1189,9 @@ void main(){
       // cameras on the confirmed path stop being dots and become stations
       if(TRAILSET[i] && tr > 0){
         var ms = (el.core.__base + 9*lock) * pf * (1 + tr*0.35);
-        el.core.setAttribute('x', (px - ms/2).toFixed(2));
-        el.core.setAttribute('y', (py - ms/2).toFixed(2));
-        el.core.setAttribute('width', ms.toFixed(2));
-        el.core.setAttribute('height', ms.toFixed(2));
+        el.core.setAttribute('cx', px.toFixed(2));
+        el.core.setAttribute('cy', py.toFixed(2));
+        el.core.setAttribute('r', (ms/2).toFixed(2));
         el.core.style.fill = '#FFFFFF';
         el.core.style.stroke = '#02182F';
         el.core.style.strokeWidth = (1.5 + lock*2).toFixed(1);
