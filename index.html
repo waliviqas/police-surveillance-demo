@@ -174,26 +174,6 @@
   .fc.bl{bottom:14px;left:14px;border-right:0;border-top:0}
   .fc.br{bottom:14px;right:14px;border-left:0;border-top:0}
 
-  /* step indicator: which beat you are on, and how many are left */
-  .steps{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);z-index:210;
-    display:flex;align-items:center;gap:14px;pointer-events:none;
-    font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.18em;
-    color:var(--faint)}
-  .steps .ticks{display:flex;gap:5px}
-  .steps .ticks i{width:16px;height:2px;background:rgba(255,255,255,.16);
-    transition:background .3s ease,box-shadow .3s ease}
-  .steps .ticks i.on{background:rgba(var(--accent),1);
-    box-shadow:0 0 10px rgba(var(--accent),.9)}
-  .steps b{color:var(--ink);font-weight:500}
-  .keyhint{position:fixed;bottom:26px;right:3vw;z-index:210;pointer-events:none;
-    font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.16em;
-    color:var(--faint)}
-  .keyhint kbd{display:inline-block;border:1px solid rgba(255,255,255,.22);
-    padding:2px 7px;margin:0 2px;color:var(--ink)}
-
-  .rail{position:fixed;top:0;left:0;height:2px;width:0;z-index:300;
-    background:linear-gradient(90deg,var(--cy-300),var(--vi-400));
-    box-shadow:0 0 16px rgba(34,211,238,.9)}
 
   /* ══════════ type ══════════ */
   .line{font-family:'Space Grotesk',sans-serif;font-weight:700;line-height:.98;
@@ -412,9 +392,6 @@
   <span class="fb t"></span><span class="fb r"></span><span class="fb b"></span><span class="fb l"></span>
   <span class="fc tl"></span><span class="fc tr"></span><span class="fc bl"></span><span class="fc br"></span>
 </div>
-<div class="rail" id="rail"></div>
-<div class="steps" aria-hidden="true"><b data-stepnow>01</b><span data-steptotal>/ 01</span><span class="ticks" data-ticks></span></div>
-<div class="keyhint" aria-hidden="true"><kbd>&larr;</kbd><kbd>&rarr;</kbd> to advance</div>
 
 <div class="mark">Clar<span>ity</span></div>
 
@@ -1060,7 +1037,6 @@
       stage:  el.querySelector('[data-stage]')
     };
   });
-  var rail = document.getElementById('rail');
   var galNow = document.querySelector('[data-galnow]');
   var root = document.documentElement;
   var ticking = false, mx=0, my=0, tmx=0, tmy=0;
@@ -1096,7 +1072,6 @@
     }
     var docH = document.documentElement.scrollHeight - vh;
     var gp = docH>0 ? window.pageYOffset/docH : 0;
-    rail.style.width = (gp*100) + '%';
 
     // The accent walks cyan -> violet -> pink across the deck, and everything
     // keyed to it walks with it: blobs, halo, frame beams, glass rims, the
@@ -1223,30 +1198,28 @@
      still need real document scroll to work, so we drive the scroll position
      ourselves and simply refuse manual input.
      ══════════════════════════════════════════════════════════════════════ */
+  /* Every stop lands on a SETTLED state, never mid-animation.
+     The reveal maths decides where those are: headline words finish at
+     p = 0.46, and the staggered fades finish at p = 0.675, so a stop before
+     either of those catches the group halfway. One press plays one whole
+     group and comes to rest. */
   var STEPS = [
-    {a:'act-title',   p:0.16, label:'Title'},
-    {a:'act-title',   p:0.72, label:'Wordmark resolves'},
-    {a:'act-hero',    p:0.30, label:'Headline'},
-    {a:'act-hero',    p:0.66, label:'Premise'},
-    {a:'act-problem', p:0.26, label:'The first hour'},
-    {a:'act-problem', p:0.52, label:'Alerts go out, not outward'},
-    {a:'act-problem', p:0.72, label:'Cameras never talk'},
-    {a:'act-problem', p:0.92, label:'Area grows as t squared'},
-    {a:'act-search',  p:0.06, label:'14:32, last seen'},
-    {a:'act-search',  p:0.30, label:'The cone expands'},
-    {a:'act-search',  p:0.48, label:'Frontier widens'},
-    {a:'act-search',  p:0.62, label:'A hit, nine minutes out'},
-    {a:'act-search',  p:0.74, label:'The path draws'},
-    {a:'act-search',  p:0.84, label:'Confirmed and locked'},
-    {a:'act-search',  p:0.97, label:'Re-bloom'},
-    {a:'act-how',     p:0.10, label:'Describe them'},
-    {a:'act-how',     p:0.35, label:'Every edge is a travel time'},
-    {a:'act-how',     p:0.60, label:'The alert is a walker'},
-    {a:'act-how',     p:0.88, label:'On a hit it re-blooms'},
-    {a:'act-privacy', p:0.30, label:'No faces, ever'},
-    {a:'act-privacy', p:0.60, label:'Descriptions, not identities'},
-    {a:'act-privacy', p:0.86, label:'Auditable by construction'},
-    {a:'act-close',   p:0.55, label:'Clarity'}
+    {a:'act-title',   p:0.68, of:'wordmark and tagline'},
+    {a:'act-hero',    p:0.62, of:'headline and premise together'},
+    {a:'act-problem', p:0.52, of:'headline, fully drawn'},
+    {a:'act-problem', p:0.82, of:'all three cards'},
+    {a:'act-search',  p:0.16, of:'last seen, origin lit'},
+    {a:'act-search',  p:0.50, of:'the cone, fully expanded'},
+    {a:'act-search',  p:0.72, of:'the hit and the path drawn'},
+    {a:'act-search',  p:0.84, of:'confirmed and locked'},
+    {a:'act-search',  p:0.97, of:'re-bloom'},
+    {a:'act-how',     p:0.125,of:'describe them'},
+    {a:'act-how',     p:0.375,of:'every edge is a travel time'},
+    {a:'act-how',     p:0.625,of:'the alert is a walker'},
+    {a:'act-how',     p:0.875,of:'on a hit it re-blooms'},
+    {a:'act-privacy', p:0.52, of:'headline, fully drawn'},
+    {a:'act-privacy', p:0.82, of:'all three commitments'},
+    {a:'act-close',   p:0.82, of:'wordmark, tagline and team'}
   ];
 
   var step = 0, tweening = null;
@@ -1257,24 +1230,13 @@
     return Math.round(el.offsetTop + STEPS[i].p * Math.max(span, 0));
   }
 
-  var nowEl   = document.querySelector('[data-stepnow]');
-  var totalEl = document.querySelector('[data-steptotal]');
-  var ticksEl = document.querySelector('[data-ticks]');
-  totalEl.textContent = '/ ' + (STEPS.length < 10 ? '0' : '') + STEPS.length;
-  STEPS.forEach(function(){ ticksEl.appendChild(document.createElement('i')); });
-  var tickEls = [].slice.call(ticksEl.children);
-  function paintStep(){
-    nowEl.textContent = (step+1 < 10 ? '0' : '') + (step+1);
-    tickEls.forEach(function(t,i){ t.classList.toggle('on', i <= step); });
-  }
-
   function goTo(i, instant){
     step = clamp(i, 0, STEPS.length-1);
-    paintStep();
     var from = window.pageYOffset, to = stepY(step), dist = to - from;
     if(instant || Math.abs(dist) < 2){ window.scrollTo(0, to); onScroll(); return; }
     // longer hops get a little more time, so every beat lands with the same weight
-    var dur = clamp(520 + Math.abs(dist) * 0.16, 520, 1500);
+    // the animation plays across the tween, so it needs room to be seen
+    var dur = clamp(900 + Math.abs(dist) * 0.20, 900, 2100);
     var t0 = null;
     if(tweening) cancelAnimationFrame(tweening);
     (function run(){
