@@ -10,26 +10,26 @@
 <style>
   :root{
     /* deep space, luminous signal */
-    --void:#03060C;
-    --void-2:#070D18;
-    --cy-100:#CFFAFE;
-    --cy-300:#67E8F9;
-    --cy-400:#22D3EE;
-    --cy-600:#0891B2;
-    --vi-400:#8B7CFF;
-    --vi-500:#6C5CE7;
-    --hot:#FF5CA8;
-    --ink:#E9F5FA;
-    --dim:#8FA6B8;
-    --faint:#5A7186;
+    --void:#020814;
+    --void-2:#05122A;
+    --cy-100:#EAF6FF;     /* ice, the specular highlight on liquid glass */
+    --cy-300:#9FD4FF;     /* pale sky */
+    --cy-400:#4FA8F5;     /* the working blue */
+    --cy-600:#1C6FD0;
+    --vi-400:#7FC4FF;     /* kept as a name, now a lighter blue */
+    --vi-500:#2E86E0;
+    --hot:#B9E4FF;        /* the confirmed path: bright water, not magenta */
+    --ink:#EDF6FF;
+    --dim:#9BB6CE;
+    --faint:#5F7C99;
     --good:#34D399;
     --warn:#FB923C;
     /* glass, on dark: light film + luminous rim */
-    --glass:linear-gradient(155deg,rgba(255,255,255,.10) 0%,rgba(120,200,255,.04) 100%);
-    --glass-line:rgba(255,255,255,.14);
-    --glass-shadow:0 0 0 1px rgba(34,211,238,.10), 0 30px 70px -30px rgba(0,0,0,.9);
-    --inset-hi:inset 0 1px 0 rgba(255,255,255,.22), inset 0 -1px 0 rgba(34,211,238,.10);
-    --accent:34,211,238;
+    --glass:linear-gradient(155deg,rgba(190,225,255,.16) 0%,rgba(79,168,245,.06) 55%,rgba(234,246,255,.10) 100%);
+    --glass-line:rgba(200,232,255,.28);
+    --glass-shadow:0 0 0 1px rgba(159,212,255,.16), 0 30px 70px -28px rgba(2,12,30,.95), 0 0 60px -20px rgba(79,168,245,.35);
+    --inset-hi:inset 0 1px 0 rgba(255,255,255,.42), inset 0 -1px 0 rgba(79,168,245,.22), inset 0 0 30px -14px rgba(234,246,255,.5);
+    --accent:79,168,245;
     --mx:0; --my:0;
   }
   *{margin:0;padding:0;box-sizing:border-box}
@@ -71,13 +71,13 @@
     -webkit-mask-image:radial-gradient(125% 85% at 50% 45%,#000 15%,transparent 82%);
             mask-image:radial-gradient(125% 85% at 50% 45%,#000 15%,transparent 82%)}
   .neural svg{width:100%;height:100%;display:block}
-  .neural .syn{stroke:rgba(150,220,248,.8);stroke-width:.6;fill:none}
-  .neural .cell{fill:rgba(185,235,250,.9)}
+  .neural .syn{stroke:rgba(180,224,255,.8);stroke-width:.6;fill:none}
+  .neural .cell{fill:rgba(215,240,255,.9)}
   .neural .mbase{opacity:.9}
   /* the clarity lens: one blended disc that brightens the mesh beneath it.
      Duplicating the mesh and masking it cost ~260 extra nodes and a full
      re-raster on every pointer move; this is a single composited layer. */
-  .lens{position:fixed;top:0;left:0;width:620px;height:620px;margin:-310px 0 0 -310px;
+  .lens{position:fixed;top:0;left:0;width:700px;height:700px;margin:-350px 0 0 -350px;
     z-index:-2;pointer-events:none;mix-blend-mode:screen;
     background:radial-gradient(circle,rgba(var(--accent),.30) 0%,
       rgba(var(--accent),.13) 38%,transparent 70%);
@@ -93,7 +93,7 @@
      interference is what makes it read as liquid rather than as stripes. */
   .lightfield{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;
     transform:translate3d(calc(var(--mx) * 22px),calc(var(--my) * 13px),0)}
-  .curtain{position:absolute;top:0;bottom:0;width:32vw;overflow:hidden;opacity:.3;
+  .curtain{position:absolute;top:0;bottom:0;width:32vw;overflow:hidden;opacity:.24;
            contain:strict;filter:blur(10px) saturate(150%);mix-blend-mode:screen}
   .curtain.l{left:0;
     -webkit-mask-image:linear-gradient(90deg,#000 0%,rgba(0,0,0,.8) 24%,transparent 86%);
@@ -202,11 +202,13 @@
 
   /* ══════════ glass ══════════ */
   .glass{position:relative;overflow:hidden;background:var(--glass);
-    backdrop-filter:blur(16px) saturate(170%);-webkit-backdrop-filter:blur(16px) saturate(170%);
+    backdrop-filter:blur(22px) saturate(150%) brightness(1.08);
+    -webkit-backdrop-filter:blur(22px) saturate(150%) brightness(1.08);
     border:1px solid var(--glass-line);border-radius:3px;
     box-shadow:var(--glass-shadow),var(--inset-hi)}
   .glass::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
-    background:linear-gradient(140deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,0) 40%)}
+    background:linear-gradient(140deg,rgba(255,255,255,.30) 0%,rgba(255,255,255,.05) 26%,
+      rgba(255,255,255,0) 46%,rgba(159,212,255,.10) 100%)}
   /* corner ticks: reads as an instrument, not a card */
   .glass::before{content:"";position:absolute;inset:7px;pointer-events:none;z-index:2;opacity:.55;
     background:
@@ -246,7 +248,7 @@
   .probe u{display:block;text-decoration:none;color:var(--faint);margin-top:3px}
   .edge{stroke:rgba(120,190,230,.16);stroke-width:1;fill:none}
   .edge.live{stroke:url(#edgeGrad);stroke-width:2.4}
-  .node rect.core{fill:#0B1725;stroke:rgba(140,200,230,.22);stroke-width:1}
+  .node rect.core{fill:#08182E;stroke:rgba(159,212,255,.22);stroke-width:1}
   .node rect.halo{fill:none;stroke:rgba(var(--accent),1);stroke-width:2.4;opacity:0}
   .readout{position:absolute;left:6vw;bottom:8vh;display:flex;gap:34px;flex-wrap:wrap;z-index:3}
   .readout .k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
@@ -461,11 +463,11 @@
       <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <defs>
           <linearGradient id="edgeGrad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#67E8F9"/><stop offset="1" stop-color="#8B7CFF"/>
+            <stop offset="0" stop-color="#9FD4FF"/><stop offset="1" stop-color="#1C6FD0"/>
           </linearGradient>
         </defs>
         <g data-edges></g>
-        <g data-trail fill="none" stroke="#FF5CA8" stroke-width="5.5"
+        <g data-trail fill="none" stroke="#B9E4FF" stroke-width="5.5"
            stroke-linecap="round" opacity=".95"></g>
         <g data-nodes></g>
       </svg>
@@ -839,7 +841,7 @@
   // one path drawn three times: a wide soft glow, the body, and a white core.
   // A single stroke cannot be both bright and thick without going muddy.
   var trailGlow = document.createElementNS(SVGNS,'path');
-  trailGlow.setAttribute('stroke','#FF5CA8'); trailGlow.setAttribute('fill','none');
+  trailGlow.setAttribute('stroke','#4FA8F5'); trailGlow.setAttribute('fill','none');
   trailGlow.setAttribute('stroke-linecap','round'); trailGlow.setAttribute('stroke-linejoin','round');
   trailGlow.style.opacity = '.22';
   var trailCore = document.createElementNS(SVGNS,'path');
@@ -928,7 +930,7 @@
       if(on) reached++;
       if(on && fresh > 0.15) frontier++;
       var lit = on ? 1 : 0.34;
-      el.core.style.fill = on ? (i===HIT && phase2>0 ? '#FF5CA8' : '#22D3EE') : '#0B1725';
+      el.core.style.fill = on ? (i===HIT && phase2>0 ? '#EAF6FF' : '#4FA8F5') : '#08182E';
       el.core.style.stroke = on ? '#FFFFFF' : 'rgba(140,200,230,.2)';
       el.core.style.strokeWidth = on ? 2 : 1;
       var px = PJ[i].x, py = PJ[i].y, pf = PJ[i].f;
@@ -954,7 +956,7 @@
         el.core.setAttribute('y', (py - ms/2).toFixed(2));
         el.core.setAttribute('width', ms.toFixed(2));
         el.core.setAttribute('height', ms.toFixed(2));
-        el.core.style.fill = '#FF5CA8';
+        el.core.style.fill = '#B9E4FF';
         el.core.style.stroke = '#FFFFFF';
         el.core.style.strokeWidth = (1.5 + lock*2).toFixed(1);
         el.core.style.opacity = 1;
@@ -1094,7 +1096,7 @@
     // The accent walks cyan -> violet -> pink across the deck, and everything
     // keyed to it walks with it: blobs, halo, frame beams, glass rims, the
     // lens, the node cores. One variable, so the whole page warms together.
-    var A = [[34,211,238],[124,120,255],[255,92,168]];
+    var A = [[28,111,208],[79,168,245],[185,228,255]];
     var seat = gp*(A.length-1), si = Math.min(Math.floor(seat), A.length-2), sf = seat-si;
     var acc = A[si].map(function(c,k){ return Math.round(mix(c, A[si+1][k], sf)); });
     root.style.setProperty('--accent', acc.join(','));
