@@ -247,7 +247,7 @@
     box-shadow:0 0 22px -6px rgba(var(--accent),.7);transform:translate(14px,-50%)}
   .probe b{color:var(--cy-300);font-weight:500}
   .probe u{display:block;text-decoration:none;color:var(--faint);margin-top:3px}
-  .edge{stroke:rgba(120,190,230,.10);stroke-width:.9;fill:none}
+  .edge{stroke:rgba(120,190,230,.16);stroke-width:1;fill:none}
   .edge.live{stroke:url(#edgeGrad);stroke-width:2.4}
   .node rect.core{fill:#0B1725;stroke:rgba(140,200,230,.22);stroke-width:1}
   .node rect.halo{fill:none;stroke:rgba(var(--accent),1);stroke-width:2.4;opacity:0}
@@ -736,7 +736,7 @@
     var d = N.map(function(b,j){
       return {j:j, d:Math.hypot(a.x-b.x, a.y-b.y)};
     }).sort(function(p,q){ return p.d-q.d; });
-    for(var k=1;k<=2;k++){
+    for(var k=1;k<=3;k++){
       var j = d[k].j, key = Math.min(i,j)+'-'+Math.max(i,j);
       if(seen[key] || d[k].d > 330) continue;
       seen[key] = 1;
@@ -771,7 +771,7 @@
   }
 
   // both sit right of centre so the bloom never plays behind the copy panel
-  var ORIGIN = 23, HIT = 42;               // fixed so the story is repeatable
+  var ORIGIN = 14, HIT = 42;               // fixed so the story is repeatable
   var A1 = arrivals(ORIGIN), A2 = arrivals(HIT);
 
   // the confirmed trail: shortest path origin → hit
@@ -822,14 +822,26 @@
     gNodes.appendChild(g);
     return {g:g, halo:halo, core:core, hit:hit};
   });
+  // one path drawn three times: a wide soft glow, the body, and a white core.
+  // A single stroke cannot be both bright and thick without going muddy.
+  var trailGlow = document.createElementNS(SVGNS,'path');
+  trailGlow.setAttribute('stroke','#FF5CA8'); trailGlow.setAttribute('fill','none');
+  trailGlow.setAttribute('stroke-linecap','round'); trailGlow.setAttribute('stroke-linejoin','round');
+  trailGlow.style.opacity = '.22';
+  var trailCore = document.createElementNS(SVGNS,'path');
+  trailCore.setAttribute('stroke','#FFFFFF'); trailCore.setAttribute('fill','none');
+  trailCore.setAttribute('stroke-linecap','round'); trailCore.setAttribute('stroke-linejoin','round');
   var trailEl = document.createElementNS(SVGNS,'path');
   trailEl.setAttribute('d', TRAIL.map(function(i,k){
     return (k?'L':'M') + N[i].x.toFixed(1) + ' ' + N[i].y.toFixed(1);
   }).join(' '));
-  gTrail.appendChild(trailEl);
+  gTrail.appendChild(trailGlow); gTrail.appendChild(trailEl); gTrail.appendChild(trailCore);
   var trailLen = trailEl.getTotalLength();
-  trailEl.style.strokeDasharray = trailLen;
-  trailEl.style.strokeDashoffset = trailLen;
+  [trailGlow, trailEl, trailCore].forEach(function(t){
+    t.style.strokeDasharray = trailLen; t.style.strokeDashoffset = trailLen;
+  });
+  var TRAILSET = {};
+  TRAIL.forEach(function(i){ TRAILSET[i] = 1; });
 
   /* the four beats of the story */
   var BEATS = [
@@ -862,7 +874,7 @@
   var lastT1 = 0, lastT2 = -1;
   // perspective projection. Rotating a volume rather than tilting a plane is
   // the difference between something that looks 3D and something that is.
-  var CX = 800, CY = 450, FOCAL = 1500, SHIFT = 55;
+  var CX = 800, CY = 450, FOCAL = 1500, SHIFT = 60;
   var PJ = N.map(function(){ return {x:0,y:0,f:1}; });
   function project(rot, pitch){
     var cs = Math.cos(rot), sn = Math.sin(rot);
@@ -887,6 +899,7 @@
     var t2 = phase2 * A2.max * 0.72;
 
     lastT1 = t1; lastT2 = phase2>0 ? t2 : -1;
+    var tr = ease(seg(p, 0.56, 0.70)), lock = ease(seg(p, 0.70, 0.80));
     // the volume turns slowly as the search runs, and leans with the cursor
     project((p-0.5)*0.52, -0.08);
     var reached = 0, frontier = 0;
@@ -920,6 +933,18 @@
       el.hit.setAttribute('y', (py-17).toFixed(1));
       // nearer cameras read brighter, which is what sells the depth
       el.core.style.opacity = lit * clamp(0.45 + (pf-0.75)*1.5, 0.3, 1);
+      // cameras on the confirmed path stop being dots and become stations
+      if(TRAILSET[i] && tr > 0){
+        var ms = (el.core.__base + 9*lock) * pf * (1 + tr*0.35);
+        el.core.setAttribute('x', (px - ms/2).toFixed(2));
+        el.core.setAttribute('y', (py - ms/2).toFixed(2));
+        el.core.setAttribute('width', ms.toFixed(2));
+        el.core.setAttribute('height', ms.toFixed(2));
+        el.core.style.fill = '#FF5CA8';
+        el.core.style.stroke = '#FFFFFF';
+        el.core.style.strokeWidth = (1.5 + lock*2).toFixed(1);
+        el.core.style.opacity = 1;
+      }
     }
     for(var e=0;e<E.length;e++){
       var live = A1.edge[e] <= t1 || (phase2>0 && A2.edge[e] <= t2);
@@ -929,17 +954,26 @@
       le.setAttribute('x2',pb.x.toFixed(1)); le.setAttribute('y2',pb.y.toFixed(1));
       le.setAttribute('class', 'edge' + (live ? ' live' : ''));
       var df = clamp(((pa.f+pb.f)/2 - 0.62)*1.9, 0.12, 1);   // fog with distance
-      le.style.opacity = (live ? 0.95 : 0.22) * df;
+      le.style.opacity = (live ? 0.95 : 0.34) * df;
       le.style.strokeWidth = (live ? 2.4 : 0.9) * clamp(pf2(pa.f,pb.f),0.5,1.6);
     }
     // the confirmed trail is reprojected too, or it would float free of the graph
-    trailEl.setAttribute('d', TRAIL.map(function(i,k){
+    var td = TRAIL.map(function(i,k){
       return (k?'L':'M') + PJ[i].x.toFixed(1) + ' ' + PJ[i].y.toFixed(1);
-    }).join(' '));
-    // the confirmed trail draws itself once the hit lands
-    var tr = ease(seg(p, 0.58, 0.72));
-    trailEl.style.strokeDashoffset = trailLen * (1 - tr);
-    trailEl.style.opacity = tr;
+    }).join(' ');
+    trailGlow.setAttribute('d', td); trailEl.setAttribute('d', td); trailCore.setAttribute('d', td);
+    // the trail draws itself once the hit lands, then locks: every camera on
+    // the path is confirmed, so the whole line thickens and the core lights up
+    var off  = trailLen * (1 - tr);
+    trailGlow.style.strokeDashoffset = off;
+    trailEl.style.strokeDashoffset   = off;
+    trailCore.style.strokeDashoffset = off;
+    trailGlow.style.strokeWidth = (16 + lock*26).toFixed(1);
+    trailEl.style.strokeWidth   = (7  + lock*9).toFixed(1);
+    trailCore.style.strokeWidth = (0  + lock*3.4).toFixed(1);
+    trailGlow.style.opacity = (tr*0.30).toFixed(2);
+    trailEl.style.opacity   = tr.toFixed(2);
+    trailCore.style.opacity = (lock*0.95).toFixed(2);
 
     // readouts
     var elapsedSec = (phase2>0 ? 9*60 + phase2*11*60 : phase1*9*60);
