@@ -10,18 +10,18 @@
 <style>
   :root{
     /* deep space, luminous signal */
-    --void:#020814;
-    --void-2:#05122A;
+    --void:#04234A;
+    --void-2:#0A3E7A;
     --cy-100:#EAF6FF;     /* ice, the specular highlight on liquid glass */
-    --cy-300:#9FD4FF;     /* pale sky */
-    --cy-400:#4FA8F5;     /* the working blue */
+    --cy-300:#B7E0FF;     /* pale sky */
+    --cy-400:#2A9BEE;     /* the working blue */
     --cy-600:#1C6FD0;
     --vi-400:#7FC4FF;     /* kept as a name, now a lighter blue */
     --vi-500:#2E86E0;
     --hot:#B9E4FF;        /* the confirmed path: bright water, not magenta */
-    --ink:#EDF6FF;
-    --dim:#9BB6CE;
-    --faint:#5F7C99;
+    --ink:#F2F9FF;
+    --dim:#BCD6EE;
+    --faint:#8FB2D2;
     --good:#34D399;
     --warn:#FB923C;
     /* glass, on dark: light film + luminous rim */
@@ -54,16 +54,6 @@
      above stays as the paint-on-failure background if WebGL is unavailable. */
   #gl{position:fixed;top:0;left:0;width:100vw;height:100vh;display:block}
 
-  /* a faint neural mesh: layered nodes, fully connected, with signal travelling
-     along a handful of paths. This is the ambient layer, not the camera graph. */
-  .neural{position:fixed;inset:0;z-index:-2;pointer-events:none;contain:strict;
-    transition:opacity .5s ease;
-    -webkit-mask-image:radial-gradient(125% 85% at 50% 45%,#000 15%,transparent 82%);
-            mask-image:radial-gradient(125% 85% at 50% 45%,#000 15%,transparent 82%)}
-  .neural svg{width:100%;height:100%;display:block}
-  .neural .syn{stroke:rgba(180,224,255,.8);stroke-width:.6;fill:none}
-  .neural .cell{fill:rgba(215,240,255,.9)}
-  .neural .mbase{opacity:.9}
   /* the clarity lens: one blended disc that brightens the mesh beneath it.
      Duplicating the mesh and masking it cost ~260 extra nodes and a full
      re-raster on every pointer move; this is a single composited layer. */
@@ -72,10 +62,6 @@
     background:radial-gradient(circle,rgba(var(--accent),.30) 0%,
       rgba(var(--accent),.13) 38%,transparent 70%);
     will-change:transform}
-  .neural .fire{stroke:rgba(var(--accent),1);stroke-width:1.8;fill:none;
-    stroke-linecap:round;opacity:.85;
-    animation:fire var(--fd) linear infinite;animation-delay:var(--fdel)}
-  @keyframes fire{from{stroke-dashoffset:var(--flen)}to{stroke-dashoffset:0}}
 
   /* ══════════ light curtains ══════════
      One fixed field for the whole page, so the light never seams between acts.
@@ -373,7 +359,6 @@
 
 <div class="liquid" aria-hidden="true"><canvas id="gl"></canvas></div>
 <div class="lens" data-lens aria-hidden="true"></div>
-<div class="neural" aria-hidden="true"><svg preserveAspectRatio="none" viewBox="0 0 1600 900" data-neural></svg></div>
 <div class="lightfield" aria-hidden="true">
   <div class="curtain l"><span class="c1"><u></u></span><span class="c2"><u></u></span><span class="c3"><u></u></span><i></i></div>
   <div class="curtain r"><span class="c1"><u></u></span><span class="c2"><u></u></span><span class="c3"><u></u></span><i></i></div>
@@ -734,107 +719,7 @@
     })();
   })();
 
-  /* ── the web ────────────────────────────────────────────────────────────
-     Not a mesh. A real orb web has two parts: straight radial threads
-     anchored at the hub, and a capture spiral strung between them that sags
-     inward under its own weight. That structure is what makes it legible
-     instead of noisy, and the sag is what stops it looking like a dartboard.
-     Spokes are unevenly spaced and rings jitter, because a spider is not a
-     compass. */
   var meshNodes = [], lensEl = null;
-  (function(){
-    var svg = document.querySelector('[data-neural]');
-    if(!svg) return;
-    var NS = 'http://www.w3.org/2000/svg';
-    var ms = 918273645;
-    function mr(){ ms = (ms*1103515245 + 12345) % 2147483648; return ms/2147483648; }
-
-    var HUB = {x: 795, y: 430}, SPOKES = 15, RINGS = 8;
-    var ang = [], acc = 0;
-    for(var i=0;i<SPOKES;i++){ acc += 1 + (mr()-0.5)*0.5; ang.push(acc); }
-    var k = (Math.PI*2)/acc;
-    ang = ang.map(function(a){ return a*k - Math.PI/2; });   // uneven, still closes
-
-    var rad = [];
-    for(var r=0;r<RINGS;r++){
-      rad.push(96 * Math.pow(r+1, 1.28) * (0.92 + mr()*0.18));
-    }
-    var P = [];                                              // P[spoke][ring]
-    for(var si=0; si<SPOKES; si++){
-      var col = [];
-      for(var ri=0; ri<RINGS; ri++){
-        var a = ang[si] + (mr()-0.5)*0.06;
-        var rr = rad[ri] * (0.96 + mr()*0.09);
-        col.push({x: HUB.x + Math.cos(a)*rr, y: HUB.y + Math.sin(a)*rr*0.80});
-      }
-      P.push(col);
-    }
-
-    var web = document.createElementNS(NS,'g');
-    web.setAttribute('class','mbase');
-    function line(a,b,o){
-      var l = document.createElementNS(NS,'line');
-      l.setAttribute('x1',a.x.toFixed(1)); l.setAttribute('y1',a.y.toFixed(1));
-      l.setAttribute('x2',b.x.toFixed(1)); l.setAttribute('y2',b.y.toFixed(1));
-      l.setAttribute('class','syn'); l.style.opacity = o.toFixed(3);
-      web.appendChild(l);
-    }
-    // radial threads: hub outward, unbroken
-    for(var si2=0; si2<SPOKES; si2++){
-      line(HUB, P[si2][0], 0.5);
-      for(var ri2=0; ri2<RINGS-1; ri2++) line(P[si2][ri2], P[si2][ri2+1], 0.52 - ri2*0.03);
-    }
-    // capture spiral: chords between neighbouring spokes, sagging toward the hub
-    var spiral = [];
-    for(var ri3=0; ri3<RINGS; ri3++){
-      for(var si3=0; si3<SPOKES; si3++){
-        if(ri3 > 2 && mr() > 0.93) continue;              // a few strands missing
-        var a1 = P[si3][ri3], b1 = P[(si3+1)%SPOKES][ri3];
-        var mxp = (a1.x+b1.x)/2, myp = (a1.y+b1.y)/2;
-        var sag = 0.90 - mr()*0.05;                        // pulled in under weight
-        var cxp = HUB.x + (mxp-HUB.x)*sag, cyp = HUB.y + (myp-HUB.y)*sag;
-        var pth = document.createElementNS(NS,'path');
-        pth.setAttribute('d','M'+a1.x.toFixed(1)+' '+a1.y.toFixed(1)+
-                             ' Q'+cxp.toFixed(1)+' '+cyp.toFixed(1)+
-                             ' '+b1.x.toFixed(1)+' '+b1.y.toFixed(1));
-        pth.setAttribute('class','syn');
-        pth.style.opacity = (0.44 - ri3*0.025).toFixed(3);
-        web.appendChild(pth);
-        spiral.push({a:a1,b:b1,c:{x:cxp,y:cyp}});
-      }
-    }
-    // anchor points, only where threads actually meet
-    for(var si4=0; si4<SPOKES; si4++){
-      for(var ri4=0; ri4<RINGS; ri4++){
-        if((si4+ri4) % 2) continue;
-        var n = P[si4][ri4];
-        var c = document.createElementNS(NS,'circle');
-        c.setAttribute('cx',n.x.toFixed(1)); c.setAttribute('cy',n.y.toFixed(1));
-        c.setAttribute('r',(1.5 + mr()*1.5).toFixed(2)); c.setAttribute('class','cell');
-        c.style.opacity = (0.42 + mr()*0.3).toFixed(3);
-        web.appendChild(c);
-      }
-    }
-
-    // something travels the web now and then, along the spiral
-    var fires = document.createElementNS(NS,'g');
-    for(var f=0; f<7; f++){
-      var sp = spiral[Math.floor(mr()*spiral.length)];
-      var pth2 = document.createElementNS(NS,'path');
-      pth2.setAttribute('d','M'+sp.a.x.toFixed(1)+' '+sp.a.y.toFixed(1)+
-                            ' Q'+sp.c.x.toFixed(1)+' '+sp.c.y.toFixed(1)+
-                            ' '+sp.b.x.toFixed(1)+' '+sp.b.y.toFixed(1));
-      pth2.setAttribute('class','fire');
-      var len = Math.hypot(sp.b.x-sp.a.x, sp.b.y-sp.a.y) * 1.15;
-      pth2.style.strokeDasharray = '11 ' + len.toFixed(0);
-      pth2.style.setProperty('--flen',(len+11).toFixed(0));
-      pth2.style.setProperty('--fd',(2.4 + mr()*3.4).toFixed(1)+'s');
-      pth2.style.setProperty('--fdel',(-(mr()*6).toFixed(2))+'s');
-      fires.appendChild(pth2);
-    }
-    svg.appendChild(web); svg.appendChild(fires);
-    meshNodes = P;
-  })();
 
   /* ══════════════════════════════════════════════════════════════════════
      THE CAMERA GRAPH
@@ -1173,9 +1058,7 @@
                b:document.querySelector('.fb.b'), l:document.querySelector('.fb.l')};
   var lastY = window.pageYOffset, vel = 0;
 
-  var neuralSvg = document.querySelector('[data-neural]');
   lensEl = document.querySelector('[data-lens]');
-  var neuralWrap = document.querySelector('.neural');
   if(!reduce){
     window.addEventListener('mousemove', function(e){
       tmx = (e.clientX/window.innerWidth - .5)*2;
@@ -1195,10 +1078,6 @@
     mx += (tmx-mx)*0.08; my += (tmy-my)*0.08;
     root.style.setProperty('--mx', mx.toFixed(3));
     root.style.setProperty('--my', my.toFixed(3));
-    if(neuralSvg){
-      neuralSvg.style.transform =
-        'translate3d(' + (mx*-26).toFixed(1) + 'px,' + (my*-16).toFixed(1) + 'px,0) scale(1.05)';
-    }
     var docH = document.documentElement.scrollHeight - vh;
     var gp = docH>0 ? window.pageYOffset/docH : 0;
 
@@ -1252,12 +1131,6 @@
 
       if(a.stage){
         renderSearch(p);
-        // the mesh is ambience, not competition. It recedes while the camera
-        // graph is on screen, so only one network reads at a time.
-        if(neuralWrap){
-          var busy = (p > 0.001 && p < 0.999) ? 1 : 0;
-          neuralWrap.style.opacity = busy ? 0.12 : 1;
-        }
         // the whole field drifts with the cursor, Apple-style parallax
         a.stage.style.transform =
           'scale(' + mix(1.0,1.06,p) + ') translate3d(' + (mx*-16) + 'px,' + (my*-10) + 'px,0)';
