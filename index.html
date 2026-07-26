@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clarity — every camera, one search</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* optical spectrum: deep water to bright signal */
+    --c-900:#06364F;
+    --c-700:#0A6E9B;
+    --c-500:#0FA3D1;
+    --c-300:#4FD0EC;
+    --c-100:#B7EBF9;
+    --violet:#6C5CE7;
+    /* canvas + ink */
+    --paper:#F6FAFC;
+    --ink:#0A1720;
+    --ink-mid:#54697A;
+    --ink-soft:#8CA2B2;
+    --good:#0E8F5B;
+    --warn:#D9603A;
+    /* glass */
+    --glass:linear-gradient(150deg,rgba(255,255,255,.78) 0%,rgba(206,238,250,.5) 100%);
+    --glass-line:rgba(255,255,255,.9);
+    --glass-shadow:0 0 0 1px rgba(15,163,209,.16), 0 28px 60px -22px rgba(6,54,79,.42), 0 3px 12px rgba(6,54,79,.08);
+    --inset-hi:inset 0 1px 0 rgba(255,255,255,.98), inset 0 -1px 0 rgba(79,208,236,.24);
+    /* live accent — the gallery retunes this per slide */
+    --accent:15,163,209;
+    /* pointer parallax, set from JS */
+    --mx:0; --my:0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  /* the page is light; without this the OS renders a dark scrollbar down the
+     side in dark mode, which reads as a grey bar over the design */
+  html{background:var(--paper);color-scheme:light;scrollbar-color:rgba(15,163,209,.45) transparent;scrollbar-width:thin}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--c-300),var(--c-700));border-radius:99px}
+  body{
+    background:transparent;              /* html carries the paper colour; an
+                                            opaque body would paint over the
+                                            negative z-index light layers */
+    color:var(--ink);
+    font-family:'Inter','Helvetica Neue',Helvetica,Arial,sans-serif;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ══════════ act 0 · title card ══════════
+     Same pinned-scroll infrastructure as every other act. The wordmark
+     assembles as you scroll through it; it is not a timed intro. */
+  #act-title .pin{padding:0;align-items:center;justify-content:center}
+  .titleWrap{
+    position:relative;width:100%;height:100%;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+  }
+  .introGrid{
+    position:absolute;inset:0;opacity:0;
+    background-image:
+      linear-gradient(rgba(15,163,209,.18) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(15,163,209,.18) 1px,transparent 1px);
+    background-size:64px 64px;
+    -webkit-mask-image:radial-gradient(58% 58% at 50% 50%,#000,transparent 78%);
+            mask-image:radial-gradient(58% 58% at 50% 50%,#000,transparent 78%);
+  }
+  .introRing{
+    position:absolute;top:50%;left:50%;width:34vmin;height:34vmin;margin:-17vmin 0 0 -17vmin;
+    border-radius:50%;border:1px solid rgba(15,163,209,.55);opacity:0;
+  }
+  .introMark{
+    position:relative;display:flex;align-items:center;
+    font-family:'Outfit',sans-serif;font-weight:800;
+    font-size:clamp(44px,10.5vw,168px);letter-spacing:-.045em;line-height:1;
+    perspective:900px;
+  }
+  .introMark .lw{display:inline-block;overflow:hidden;padding:.06em .012em}
+  .introMark .lw > b{display:inline-block;font-weight:inherit;transform-origin:50% 100%}
+  .introMark .hot > b{
+    background:linear-gradient(150deg,var(--c-300),var(--c-500) 45%,var(--c-900));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .introScan{
+    position:absolute;top:-40%;height:180%;width:30%;pointer-events:none;
+    background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.95) 45%,
+                                     rgba(180,235,250,.75) 62%,rgba(255,255,255,0));
+    filter:blur(24px);opacity:0;mix-blend-mode:overlay;
+  }
+  .introSub{
+    margin-top:4vmin;white-space:nowrap;
+    font-size:clamp(10px,1.1vw,13px);font-weight:600;
+    letter-spacing:.42em;text-transform:uppercase;color:var(--c-700);opacity:0;
+  }
+
+  /* ══════════ liquid backdrop ══════════
+     Fixed, slowly drifting blobs. Everything glassy above it refracts THIS.
+     Without it, backdrop-filter has nothing to show. */
+  .liquid{position:fixed;inset:0;z-index:-3;overflow:hidden;contain:strict;
+    background:linear-gradient(165deg,#EDF8FC 0%,var(--paper) 40%,#E9F1FB 100%)}
+  .blob{position:absolute;border-radius:50%;filter:blur(60px);will-change:transform}
+  .b1{width:62vw;height:62vw;left:-14vw;top:-18vw;
+      background:radial-gradient(circle at 40% 40%,rgba(var(--accent),.72),rgba(15,163,209,0) 62%);
+      animation:drift1 26s ease-in-out infinite alternate}
+  .b2{width:54vw;height:54vw;right:-12vw;top:6vh;
+      background:radial-gradient(circle at 50% 50%,rgba(108,92,231,.5),rgba(108,92,231,0) 62%);
+      animation:drift2 32s ease-in-out infinite alternate}
+  .b3{width:52vw;height:52vw;left:20vw;bottom:-22vw;
+      background:radial-gradient(circle at 50% 50%,rgba(var(--accent),.5),rgba(15,163,209,0) 62%);
+      animation:drift3 38s ease-in-out infinite alternate}
+  .b4{width:44vw;height:44vw;right:12vw;bottom:-10vw;
+      background:radial-gradient(circle at 50% 50%,rgba(140,225,245,.85),rgba(140,225,245,0) 62%);
+      animation:drift1 30s ease-in-out infinite alternate-reverse}
+  @keyframes drift1{to{transform:translate3d(9vw,7vh,0) scale(1.14)}}
+  @keyframes drift2{to{transform:translate3d(-11vw,10vh,0) scale(.88)}}
+  @keyframes drift3{to{transform:translate3d(7vw,-9vh,0) scale(1.2)}}
+  /* milky veil: enough to keep body copy legible, not enough to erase the colour */
+  .veil{position:fixed;inset:0;z-index:-2;pointer-events:none;
+    background:radial-gradient(120% 80% at 50% 30%,rgba(250,253,255,.44),rgba(246,250,252,.74) 70%);
+  }
+
+  /* ══════════ light curtains ══════════
+     One fixed field for the whole page, so the light never seams between acts.
+     Centre is left clear so the type stays readable. Each curtain is three
+     layers of vertical striations scrolling sideways at different speeds; the
+     interference between the layers is what makes it read as liquid. */
+  .lightfield{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;
+    transform:translate3d(calc(var(--mx) * 20px),calc(var(--my) * 12px),0)}
+  .curtain{position:absolute;top:0;bottom:0;width:33vw;overflow:hidden;opacity:.62;
+           contain:strict;filter:blur(9px) saturate(150%)}
+  .curtain.l{left:0;
+    -webkit-mask-image:linear-gradient(90deg,#000 0%,rgba(0,0,0,.8) 26%,transparent 86%);
+            mask-image:linear-gradient(90deg,#000 0%,rgba(0,0,0,.8) 26%,transparent 86%)}
+  .curtain.r{right:0;
+    -webkit-mask-image:linear-gradient(270deg,#000 0%,rgba(0,0,0,.8) 26%,transparent 86%);
+            mask-image:linear-gradient(270deg,#000 0%,rgba(0,0,0,.8) 26%,transparent 86%)}
+  .curtain span{
+    position:absolute;inset:-16% -34%;display:block;overflow:hidden;
+    /* tilt the whole layer, not the gradient; an angled gradient would seam */
+    transform:rotate(var(--tilt,-3deg)) scale(1.24);
+    -webkit-mask-image:linear-gradient(180deg,transparent,#000 15%,#000 85%,transparent);
+            mask-image:linear-gradient(180deg,transparent,#000 15%,#000 85%,transparent);
+    animation:breathe var(--bp) ease-in-out infinite alternate;
+  }
+  /* the moving part is its own layer: transform is composited on the GPU, where
+     animating background-position would repaint the blurred layer every frame */
+  .curtain span > u{
+    position:absolute;top:0;bottom:0;left:0;display:block;
+    width:calc(100% + var(--tile));
+    background-repeat:repeat;
+    background-size:var(--tile) 100%;
+    animation:flowX var(--sp) linear infinite;
+    will-change:transform;
+  }
+  /* translating by exactly one tile makes the loop seamless */
+  @keyframes flowX{to{transform:translate3d(calc(var(--tile) * -1),0,0)}}
+  @keyframes breathe{to{opacity:var(--o2);transform:rotate(var(--tilt,-3deg)) scale(1.34) translateY(var(--dy,-4%))}}
+
+  .c1{--tile:250px;--sp:4s;--bp:3.4s;--o2:.45;--dy:-5%;opacity:.95}
+  .c1 > u{background-image:repeating-linear-gradient(90deg,
+      rgba(15,163,209,0)    0px,
+      rgba(15,163,209,.5)   16px,
+      rgba(79,208,236,.22)  38px,
+      rgba(255,255,255,.9)  48px,
+      rgba(10,110,155,.34)  60px,
+      rgba(15,163,209,0)    96px)}
+  .c2{--tile:163px;--sp:2.6s;--bp:2.3s;--o2:.8;--dy:4%;opacity:.5;--tilt:2.5deg;
+    animation-direction:alternate-reverse}
+  .c2 > u{animation-direction:reverse;background-image:repeating-linear-gradient(90deg,
+      rgba(140,220,245,0)   0px,
+      rgba(140,220,245,.44) 12px,
+      rgba(255,255,255,.72) 22px,
+      rgba(108,92,231,.24)  40px,
+      rgba(140,220,245,0)   72px)}
+  .c3{--tile:430px;--sp:6.2s;--bp:4.8s;--o2:.35;--dy:-7%;opacity:.75;--tilt:-6deg}
+  .c3 > u{background-image:repeating-linear-gradient(90deg,
+      rgba(6,54,79,0)      0px,
+      rgba(10,110,155,.4)  40px,
+      rgba(15,163,209,.16) 120px,
+      rgba(6,54,79,0)      210px)}
+  /* a glint sweeps the curtain every few seconds; real glass catches the light
+     in passes, it doesn't shimmer uniformly */
+  .curtain i{
+    position:absolute;top:-10%;height:120%;width:26%;pointer-events:none;
+    background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.9) 42%,
+                                     rgba(183,235,249,.6) 62%,rgba(255,255,255,0));
+    filter:blur(15px);opacity:0;will-change:transform;
+    animation:glint 6.5s ease-in-out infinite;
+  }
+  .curtain.r i{animation-delay:-3.25s}
+  @keyframes glint{
+    0%  {transform:translateX(-130%);opacity:0}
+    10% {opacity:1}
+    34% {transform:translateX(330%);opacity:0}
+    100%{transform:translateX(330%);opacity:0}
+  }
+  /* warm halo that follows the scroll so glass always has colour behind it */
+  .halo{position:absolute;inset:0;
+    background:
+      radial-gradient(42% 46% at var(--hx,70%) var(--hy,46%),rgba(var(--accent),.4),rgba(15,163,209,0) 72%),
+      radial-gradient(58% 40% at 26% var(--hy2,80%),rgba(108,92,231,.34),rgba(108,92,231,0) 72%);
+  }
+
+  /* Blur cost scales with pixels, so a fullscreen 4K window pays several times
+     what a laptop does for the same design. Ease off above 1600px. */
+  @media (min-width:1600px){
+    .curtain{filter:blur(7px) saturate(150%)}
+    .blob{filter:blur(48px)}
+    .glass{backdrop-filter:blur(10px) saturate(170%);
+           -webkit-backdrop-filter:blur(10px) saturate(170%)}
+    .curtain i{filter:blur(11px)}
+  }
+
+  /* ══════════ pinned-scroll scaffold ══════════ */
+  .act{position:relative;width:100%}
+  .pin{
+    position:sticky;top:0;height:100vh;overflow:hidden;
+    display:flex;flex-direction:column;justify-content:center;padding:96px 6vw 56px;
+  }
+
+  /* ══════════ nav: floating glass pill ══════════ */
+  header{
+    position:fixed;top:0;left:0;right:0;z-index:200;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:20px 3vw;pointer-events:none;
+  }
+  .brand{
+    font-family:'Outfit',sans-serif;font-weight:800;font-size:21px;text-transform:uppercase;
+    letter-spacing:-.02em;
+    background:linear-gradient(120deg,var(--c-700),var(--c-300));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .brand span{color:var(--ink);-webkit-text-fill-color:var(--ink)}
+  header nav{
+    pointer-events:auto;display:flex;gap:4px;padding:7px;border-radius:999px;
+    background:var(--glass);backdrop-filter:blur(18px) saturate(180%);
+    -webkit-backdrop-filter:blur(18px) saturate(180%);
+    border:1px solid var(--glass-line);box-shadow:var(--glass-shadow),var(--inset-hi);
+  }
+  header nav a{
+    color:var(--ink-mid);text-decoration:none;font-size:12px;font-weight:600;
+    letter-spacing:.02em;padding:9px 16px;border-radius:999px;
+    transition:color .2s,background .2s;
+  }
+  header nav a:hover{color:var(--ink);background:rgba(255,255,255,.7)}
+  .viewbtn{
+    pointer-events:auto;text-decoration:none;font-family:'Outfit',sans-serif;font-weight:700;
+    font-size:13px;letter-spacing:.01em;color:#fff;padding:13px 22px;border-radius:999px;
+    background:linear-gradient(135deg,var(--c-500),var(--c-900));
+    box-shadow:0 10px 26px -8px rgba(10,110,155,.7), inset 0 1px 0 rgba(255,255,255,.42);
+    transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s;
+  }
+  .viewbtn:hover{transform:translateY(-2px) scale(1.03)}
+
+  /* scroll rail */
+  .rail{position:fixed;top:0;left:0;height:3px;width:0;z-index:300;
+        background:linear-gradient(90deg,var(--c-300),var(--c-700));
+        box-shadow:0 0 14px rgba(15,163,209,.6)}
+
+  /* ══════════ split-word mask reveal ══════════ */
+  .line{
+    font-family:'Outfit',sans-serif;font-weight:800;
+    line-height:.94;letter-spacing:-.035em;
+    display:flex;flex-wrap:wrap;align-items:center;gap:0 .2em;
+  }
+  .w{display:inline-block;overflow:hidden;vertical-align:bottom;padding-bottom:.06em}
+  .w > i{display:inline-block;font-style:normal;transform:translateY(110%);will-change:transform}
+  /* gradient fill that slowly flows through the letters */
+  .w.hot > i{
+    background:linear-gradient(100deg,var(--c-300) 0%,var(--c-500) 30%,var(--c-900) 55%,var(--c-500) 80%,var(--c-300) 100%);
+    background-size:250% 100%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:flow 9s linear infinite;
+  }
+  @keyframes flow{to{background-position:250% 0}}
+  .w.hollow > i{color:transparent;-webkit-text-stroke:2px var(--c-500)}
+
+  /* peekaboo slot: opens from zero width and shoulders the words apart */
+  .peek{
+    display:inline-block;overflow:hidden;border-radius:18px;flex:0 0 auto;align-self:center;
+    width:0;border:1px solid var(--glass-line);
+  }
+  .peek > .peekInner{display:block;height:100%;will-change:transform}
+
+  /* ══════════ hero ══════════ */
+  .hero-type{font-size:clamp(38px,8.2vw,124px)}
+  .hero-sub{
+    margin-top:34px;max-width:660px;font-size:clamp(15px,1.35vw,19px);line-height:1.65;
+    color:var(--ink-mid);opacity:0;will-change:opacity,transform;
+  }
+  .hero-sub strong{color:var(--ink);font-weight:600}
+  .scrollcue{
+    position:absolute;bottom:34px;left:6vw;
+    font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft);
+  }
+  .scrollcue i{display:inline-block;font-style:normal;animation:bob 2.2s ease-in-out infinite}
+  @keyframes bob{50%{transform:translateY(5px)}}
+
+  /* ══════════ generic act headline ══════════ */
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:9px;align-self:flex-start;
+    font-size:12px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--c-700);margin-bottom:22px;opacity:0;will-change:opacity;
+    padding:9px 16px;border-radius:999px;
+    background:var(--glass);backdrop-filter:blur(14px) saturate(180%);
+    -webkit-backdrop-filter:blur(14px) saturate(180%);
+    border:1px solid var(--glass-line);box-shadow:var(--inset-hi);
+  }
+  .eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;
+    background:var(--c-500);box-shadow:0 0 10px var(--c-500)}
+  .act-type{font-size:clamp(32px,6vw,92px)}
+
+  /* ══════════ glass ══════════ */
+  .glass{
+    position:relative;overflow:hidden;
+    background:var(--glass);
+    backdrop-filter:blur(14px) saturate(180%);
+    -webkit-backdrop-filter:blur(14px) saturate(180%);
+    border:1px solid var(--glass-line);
+    border-radius:22px;
+    box-shadow:var(--glass-shadow),var(--inset-hi);
+  }
+  .glass::after{
+    content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+    background:linear-gradient(135deg,rgba(255,255,255,.62) 0%,rgba(255,255,255,0) 38%);
+  }
+
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:44px}
+  .card{padding:30px 26px;opacity:0;will-change:opacity,transform}
+  .card .num{
+    font-family:'Outfit',sans-serif;font-weight:800;font-size:13px;letter-spacing:.2em;margin-bottom:14px;
+    background:linear-gradient(120deg,var(--c-500),var(--c-900));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .card h3{font-family:'Outfit',sans-serif;font-weight:700;font-size:20px;line-height:1.2;margin-bottom:12px;letter-spacing:-.015em}
+  .card p{color:var(--ink-mid);font-size:14.5px;line-height:1.65}
+  .card p strong{color:var(--ink);font-weight:600}
+
+  /* ══════════ gallery: cards that come at you ══════════
+     Neighbours overlap on purpose; drawing only the current slide leaves a
+     blank frame at every boundary. */
+  .gal-frame{position:relative;height:100vh}
+  .slide{position:absolute;inset:0;display:grid;place-items:center;
+         opacity:0;pointer-events:none;visibility:hidden}
+  .zoom{
+    position:relative;width:86vw;max-width:1380px;height:74vh;
+    display:flex;align-items:center;gap:4vw;padding:5vh 4.5vw;
+    border-radius:34px;overflow:hidden;transform-origin:50% 52%;
+    background:linear-gradient(150deg,rgba(255,255,255,.9) 0%,rgba(212,240,251,.74) 100%);
+    border:1px solid var(--glass-line);
+    box-shadow:0 0 0 1px rgba(15,163,209,.16), 0 30px 60px -30px rgba(var(--accent),.6), var(--inset-hi);
+    contain:layout paint;
+  }
+  .zoom::after{
+    content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+    background:
+      linear-gradient(135deg,rgba(255,255,255,.6) 0%,rgba(255,255,255,0) 34%),
+      radial-gradient(60% 70% at 88% 50%,rgba(var(--accent),.2),rgba(255,255,255,0) 70%);
+  }
+  .zoom .txt{flex:1 1 46%;position:relative;z-index:1}
+  .zoom .vis{flex:1 1 54%;position:relative;z-index:1}
+  .slide h2{
+    font-family:'Outfit',sans-serif;font-weight:800;
+    font-size:clamp(28px,4.2vw,60px);line-height:1;margin-bottom:20px;letter-spacing:-.035em;
+  }
+  .slide h2 em{
+    font-style:normal;
+    background:linear-gradient(120deg,var(--c-300),var(--c-500) 55%,var(--c-900));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .slide p{color:var(--ink-mid);font-size:clamp(14px,1.2vw,17px);line-height:1.68;max-width:520px}
+  .slide p strong{color:var(--ink);font-weight:600}
+  .gal-count{
+    position:absolute;bottom:34px;right:6vw;z-index:5;
+    font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;letter-spacing:.14em;color:var(--ink-soft);
+    padding:9px 16px;border-radius:999px;
+    background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border:1px solid var(--glass-line);box-shadow:var(--inset-hi);
+  }
+  .gal-count b{color:var(--c-700)}
+
+  /* the search form mock */
+  .mock{padding:24px;border-radius:18px;background:rgba(255,255,255,.56);
+        border:1px solid var(--glass-line);box-shadow:var(--inset-hi)}
+  .mock .bar{display:flex;gap:7px;margin-bottom:18px}
+  .mock .dot{width:10px;height:10px;border-radius:50%;background:rgba(10,23,32,.14)}
+  .mock .dot:first-child{background:var(--c-500);box-shadow:0 0 10px rgba(15,163,209,.8)}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px}
+  .field .input{
+    background:rgba(255,255,255,.76);border:1px solid rgba(255,255,255,.9);
+    border-radius:12px;padding:12px 14px;font-size:13.5px;color:var(--ink);
+    box-shadow:inset 0 1px 2px rgba(6,54,79,.06);
+  }
+  .field .input.ph{color:var(--ink-soft)}
+  .field .input.up{border-style:dashed;border-color:rgba(15,163,209,.5);color:var(--c-700);text-align:center;padding:18px}
+  .mock .go{
+    text-align:center;color:#fff;font-family:'Outfit',sans-serif;font-weight:700;
+    font-size:14px;letter-spacing:.01em;border-radius:12px;padding:15px;margin-top:6px;
+    background:linear-gradient(135deg,var(--c-500),var(--c-900));
+    box-shadow:0 12px 28px -10px rgba(10,110,155,.75), inset 0 1px 0 rgba(255,255,255,.4);
+  }
+
+  /* step visual */
+  .stepbig{
+    font-family:'Outfit',sans-serif;font-weight:800;font-size:clamp(80px,13vw,200px);line-height:.82;
+    letter-spacing:-.05em;
+    background:linear-gradient(165deg,var(--c-300),var(--c-500) 45%,var(--c-900));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .steplist{margin-top:22px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+  .steplist div{
+    font-size:13px;color:var(--ink-soft);letter-spacing:.12em;text-transform:uppercase;font-weight:600;
+    padding:8px 16px;border-radius:999px;border:1px solid transparent;
+  }
+  .steplist div.on{
+    color:var(--c-900);background:rgba(255,255,255,.66);
+    border-color:var(--glass-line);box-shadow:var(--inset-hi);
+  }
+  .steplist div.on::before{content:"▸ ";color:var(--c-500)}
+
+  /* code specimen — the walker, shown as the product */
+  .code{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:clamp(10px,.92vw,13px);
+    line-height:1.7;color:var(--c-900);background:rgba(255,255,255,.6);
+    border:1px solid var(--glass-line);border-radius:16px;padding:20px 22px;
+    box-shadow:var(--inset-hi);white-space:pre;overflow-x:auto;
+  }
+  .code .k{color:var(--violet);font-weight:600}
+  .code .s{color:var(--c-700)}
+  .code .c{color:var(--ink-soft)}
+
+  /* ══════════ the time cone ══════════ */
+  .cone{display:flex;align-items:center;gap:4vw;margin-top:38px}
+  .coneCopy{flex:1 1 42%;opacity:0}
+  .coneCopy p{color:var(--ink-mid);font-size:clamp(14px,1.2vw,17px);line-height:1.68;margin-bottom:14px}
+  .coneCopy p strong{color:var(--ink);font-weight:600}
+  .coneChart{flex:1 1 58%;padding:26px 26px 20px;border-radius:20px}
+  .coneChart svg{display:block;width:100%;height:auto}
+  .coneRead{display:flex;gap:26px;margin-top:16px;flex-wrap:wrap}
+  .coneRead div{flex:1 1 120px}
+  .coneRead .k{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--ink-soft);margin-bottom:4px}
+  .coneRead .v{font-family:'Outfit',sans-serif;font-weight:800;font-size:clamp(20px,2vw,30px);
+    letter-spacing:-.03em;
+    background:linear-gradient(150deg,var(--c-300),var(--c-500) 55%,var(--c-900));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .coneRead .v.warn{background:linear-gradient(150deg,#F0A17E,var(--warn));
+    -webkit-background-clip:text;background-clip:text}
+
+  /* ══════════ privacy tiers ══════════ */
+  .mkt{display:flex;align-items:stretch;gap:16px;margin-top:40px}
+  .mkt .tier{flex:1 1 0;padding:26px 24px;border-radius:20px;opacity:0;position:relative}
+  .mkt .lab{font-family:'Outfit',sans-serif;font-weight:800;font-size:12px;
+    letter-spacing:.16em;color:var(--c-700);margin-bottom:10px}
+  .mkt .fig{font-family:'Outfit',sans-serif;font-weight:800;line-height:1.05;
+    font-size:clamp(20px,2.3vw,32px);letter-spacing:-.03em;color:var(--ink)}
+  .mkt .who{margin-top:12px;font-size:13.5px;line-height:1.6;color:var(--ink-mid)}
+  .mkt .who strong{color:var(--ink);font-weight:600}
+
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;
+    clip-path:inset(50%);white-space:nowrap}
+
+  /* ══════════ mission word-by-word ══════════ */
+  .mission{
+    font-family:'Outfit',sans-serif;font-weight:800;
+    font-size:clamp(21px,3.2vw,46px);line-height:1.16;letter-spacing:-.03em;
+    display:flex;flex-wrap:wrap;gap:0 .24em;max-width:1000px;
+  }
+  .mission span{opacity:.16;transition:opacity .2s linear;will-change:opacity}
+  .mission span.lit{opacity:1}
+  .mission span.acc{
+    background:linear-gradient(120deg,var(--c-300),var(--c-500) 55%,var(--c-900));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .stats{display:flex;gap:14px;margin-top:32px;flex-wrap:wrap}
+  .stat{padding:20px 24px;flex:1 1 220px;opacity:0;will-change:opacity,transform}
+  .stat .big{
+    font-family:'Outfit',sans-serif;font-weight:800;font-size:clamp(32px,4.2vw,56px);line-height:1;
+    letter-spacing:-.04em;
+    background:linear-gradient(160deg,var(--c-300),var(--c-500) 55%,var(--c-900));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .stat .lb{margin-top:10px;font-size:12px;font-weight:500;text-transform:uppercase;
+    letter-spacing:.1em;color:var(--ink-mid);max-width:230px;line-height:1.55;position:relative;z-index:1}
+
+  /* ══════════ closing ══════════ */
+  .closeMark{
+    font-family:'Outfit',sans-serif;font-weight:800;line-height:1;
+    font-size:clamp(44px,9.5vw,158px);letter-spacing:-.045em;
+    background:linear-gradient(150deg,var(--c-300),var(--c-500) 42%,var(--c-900));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    opacity:0;
+  }
+  .closeMark span{color:var(--ink);-webkit-text-fill-color:var(--ink)}
+  .closeSub{
+    margin-top:18px;font-size:clamp(11px,1.25vw,16px);font-weight:600;
+    letter-spacing:.34em;text-transform:uppercase;color:var(--c-700);opacity:0;
+  }
+  .team{margin-top:44px;opacity:0}
+  .teamLab{font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--ink-soft);margin-bottom:12px}
+  .teamRow{display:flex;flex-wrap:wrap;gap:10px}
+  .teamRow span{
+    font-family:'Outfit',sans-serif;font-weight:700;font-size:clamp(15px,1.5vw,20px);
+    letter-spacing:-.01em;color:var(--ink);padding:11px 22px;border-radius:999px;
+    background:var(--glass);border:1px solid var(--glass-line);
+    box-shadow:var(--glass-shadow),var(--inset-hi);
+    backdrop-filter:blur(14px) saturate(180%);
+    -webkit-backdrop-filter:blur(14px) saturate(180%);
+  }
+
+  /* ══════════ reduced motion ══════════ */
+  @media (prefers-reduced-motion: reduce){
+    .w > i{transform:none !important}
+    .hero-sub,.eyebrow,.card,.stat,.coneCopy,.mkt .tier,.team,.closeMark,.closeSub{opacity:1 !important;transform:none !important}
+    .mission span{opacity:1 !important}
+    .slide{position:relative;opacity:1 !important;visibility:visible !important;height:auto;padding:8vh 0}
+    .zoom{transform:none !important;height:auto;width:88vw}
+    .gal-frame{height:auto}
+    .act{height:auto !important}
+    .pin{position:relative;height:auto;padding:12vh 6vw}
+    .blob,.curtain span,.curtain i,.w.hot > i,.scrollcue i{animation:none !important}
+    .peek{width:auto !important}
+  }
+
+  @media (max-width:900px){
+    .cards{grid-template-columns:1fr;gap:12px}
+    .card{padding:20px}
+    .zoom{flex-direction:column;align-items:flex-start;gap:22px;height:78vh;overflow-y:auto}
+    .zoom .vis{width:100%}
+    .cone,.mkt{flex-direction:column}
+    header nav,.viewbtn{display:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- liquid backdrop: what all the glass refracts -->
+<div class="liquid" aria-hidden="true">
+  <div class="blob b1"></div><div class="blob b2"></div>
+  <div class="blob b3"></div><div class="blob b4"></div>
+</div>
+<div class="veil" aria-hidden="true"></div>
+<!-- one continuous light field for the whole page, never rebuilt per act -->
+<div class="lightfield" aria-hidden="true">
+  <div class="curtain l"><span class="c1"><u></u></span><span class="c2"><u></u></span><span class="c3"><u></u></span><i></i></div>
+  <div class="curtain r"><span class="c1"><u></u></span><span class="c2"><u></u></span><span class="c3"><u></u></span><i></i></div>
+  <div class="halo" data-halo></div>
+</div>
+
+<div class="rail" id="rail"></div>
+
+<header>
+  <div class="brand">Clar<span>ity</span></div>
+  <nav>
+    <a href="#act-problem">Problem</a>
+    <a href="#act-gallery">How it works</a>
+    <a href="#act-cone">The cone</a>
+    <a href="#act-privacy">Privacy</a>
+    <a href="#act-close">Team</a>
+  </nav>
+  <a class="viewbtn" href="#act-gallery">See&nbsp;the&nbsp;search</a>
+</header>
+
+<!-- ═══════ ACT 0 · TITLE CARD ═══════ -->
+<section class="act" id="act-title" style="height:250vh">
+  <div class="pin">
+    <div class="titleWrap" data-title>
+      <div class="introGrid" data-grid></div>
+      <div class="introRing" data-ring></div>
+      <div class="introRing" data-ring></div>
+      <div class="introMark" id="introMark"><div class="introScan" data-scan></div></div>
+      <div class="introSub" data-sub>Every camera, one search</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ ACT 1 · HERO ═══════ -->
+<section class="act" id="act-hero" style="height:300vh">
+  <div class="pin">
+    <div class="sr-only">The search moves the way people do</div>
+    <div class="line hero-type" aria-hidden="true">
+      <span class="w"><i>The</i></span>
+      <span class="w hot"><i>search</i></span>
+      <span class="w"><i>moves</i></span>
+    </div>
+    <div class="line hero-type" aria-hidden="true">
+      <span class="w hollow"><i>the</i></span>
+      <span class="peek" data-peek>
+        <span class="peekInner">
+          <svg viewBox="0 0 220 130" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+            <defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#4FD0EC"/><stop offset="1" stop-color="#0A6E9B"/>
+            </linearGradient></defs>
+            <rect width="220" height="130" fill="url(#g1)"/>
+            <g stroke="#fff" fill="none" stroke-width="2.6" stroke-linecap="round">
+              <path d="M34 96 L78 52 L128 78 L186 38" opacity=".85"/>
+              <circle cx="34" cy="96" r="7" fill="#fff" stroke="none"/>
+              <circle cx="78" cy="52" r="7" fill="#fff" stroke="none"/>
+              <circle cx="128" cy="78" r="7" fill="#fff" stroke="none"/>
+              <circle cx="186" cy="38" r="9" fill="#fff" stroke="none"/>
+              <circle cx="186" cy="38" r="17" opacity=".6"/>
+              <circle cx="186" cy="38" r="26" opacity=".3"/>
+            </g>
+          </svg>
+        </span>
+      </span>
+      <span class="w hot"><i>way</i></span>
+      <span class="w"><i>people</i></span>
+      <span class="w"><i>do</i></span>
+    </div>
+    <p class="hero-sub" data-fade>
+      <strong>Clarity turns a city's cameras into one coordinated search.</strong>
+      When someone goes missing, the alert doesn't broadcast. It travels the camera
+      network itself, expanding along real travel times, handing context from one
+      camera to the next until someone is found.
+    </p>
+    <div class="scrollcue">Scroll to explore <i>↓</i></div>
+  </div>
+</section>
+
+<!-- ═══════ ACT 2 · PROBLEM ═══════ -->
+<section class="act" id="act-problem" style="height:500vh">
+  <div class="pin">
+    <div class="eyebrow" data-fade>The Problem</div>
+    <div class="line act-type">
+      <span class="w"><i>The</i></span>
+      <span class="w"><i>first</i></span>
+      <span class="w hot"><i>hour</i></span>
+      <span class="w hot"><i>is</i></span>
+      <span class="w hot"><i>everything</i></span>
+    </div>
+    <div class="cards">
+      <div class="card glass" data-fade><div class="num">01</div>
+        <h3>Alerts go out, not outward</h3>
+        <p>An alert is broadcast to everyone at once, or to a radius on a map.
+        But nobody moves in a circle. People move along <strong>streets, transit
+        lines and sidewalks</strong>, and a radius searches mostly places they
+        could never have reached.</p>
+      </div>
+      <div class="card glass" data-fade><div class="num">02</div>
+        <h3>Cameras never talk to each other</h3>
+        <p>Every feed is watched alone. The camera two blocks north has
+        <strong>no idea</strong> what the camera behind the station just saw, so
+        the same person is found from scratch, over and over, by whoever happens
+        to be looking.</p>
+      </div>
+      <div class="card glass" data-fade><div class="num">03</div>
+        <h3>The search area grows as time squared</h3>
+        <p>Someone on foot is inside <strong>0.8 square miles</strong> after ten
+        minutes and <strong>7 square miles</strong> after thirty. Every minute
+        spent organising the search costs more than the last one did.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ ACT 3 · HOW IT WORKS ═══════ -->
+<section class="act" id="act-gallery" style="height:750vh">
+  <div class="pin" style="padding:0">
+    <div class="gal-frame" id="gal">
+
+      <div class="slide" data-slide data-accent="15,163,209">
+        <div class="zoom">
+          <div class="txt">
+            <h2>Describe them.<br><em>We search.</em></h2>
+            <p>Where they were last seen, when, what they were wearing, and how
+            they travel. No photo, no ID, <strong>no biometrics</strong>. That is
+            the whole interface, and it is everything the network needs.</p>
+          </div>
+          <div class="vis">
+            <div class="mock">
+              <div class="bar"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+              <div class="field"><label>Point last seen</label><div class="input">Caltrain, 4th &amp; King, San Francisco</div></div>
+              <div class="field"><label>Time last seen</label><div class="input">14:32 &middot; 6 minutes ago</div></div>
+              <div class="field"><label>Description</label><div class="input">"Red jacket, blue duffel bag, grey cap"</div></div>
+              <div class="field"><label>Travels by</label><div class="input ph">On foot &middot; transit</div></div>
+              <div class="go">Start search</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide" data-slide data-accent="79,208,236">
+        <div class="zoom">
+          <div class="txt">
+            <h2>Step one.<br><em>The graph.</em></h2>
+            <p>Every camera is a node. Every edge is <strong>reachability, not
+            proximity</strong>: an edge from one camera to the next carries how
+            long it actually takes to travel between them on foot, by car, by
+            transit. The map is the algorithm.</p>
+          </div>
+          <div class="vis"><div class="stepbig">1</div>
+            <div class="steplist">
+              <div class="on">Graph</div><div>Cone</div><div>Handoff</div><div>Re-bloom</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide" data-slide data-accent="108,92,231">
+        <div class="zoom">
+          <div class="txt">
+            <h2>Step two.<br><em>The cone.</em></h2>
+            <p>The alert is a <strong>walker</strong>. It spawns at the point last
+            seen and expands outward only along edges it could have been travelled
+            in the time elapsed. A camera nine minutes away isn't watching yet.
+            It starts at t+9.</p>
+          </div>
+          <div class="vis"><div class="stepbig">2</div>
+            <div class="steplist">
+              <div>Graph</div><div class="on">Cone</div><div>Handoff</div><div>Re-bloom</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide" data-slide data-accent="15,163,209">
+        <div class="zoom">
+          <div class="txt">
+            <h2>Step three.<br><em>The handoff.</em></h2>
+            <p>Arriving at a camera, the walker hands its vision agent
+            <strong>context, not a query</strong>: red jacket, blue duffel, last
+            seen six minutes ago heading north, moderate confidence. Each camera
+            starts where the last one left off.</p>
+          </div>
+          <div class="vis">
+            <div class="code"><span class="c"># the alert is not a message. it is a walker.</span>
+<span class="k">walker</span> Bolo {
+    <span class="k">has</span> description: <span class="s">str</span>;
+    <span class="k">has</span> origin_ts: <span class="s">int</span>;
+    <span class="k">has</span> trail: <span class="s">list</span>;
+
+    <span class="k">can</span> hunt <span class="k">with</span> Camera entry {
+        hit = watch(here.feed, self.description, self.trail);
+        <span class="k">if</span> hit.matched {
+            self.trail.append(here);
+            self.origin_ts = hit.ts;   <span class="c"># re-bloom</span>
+        }
+        <span class="k">visit</span> [--&gt;](?travel_s &lt;= elapsed(self.origin_ts));
+    }
+}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide" data-slide data-accent="79,208,236">
+        <div class="zoom">
+          <div class="txt">
+            <h2>Step four.<br><em>Re-bloom.</em></h2>
+            <p>On a hit the walker <strong>relocates to that camera</strong>,
+            resets its clock and blooms again from the new position. The confirmed
+            path is written back into the graph as edges. On a miss across the
+            whole frontier, confidence decays, the cone widens, and eventually
+            the search retires itself.</p>
+          </div>
+          <div class="vis"><div class="stepbig">4</div>
+            <div class="steplist">
+              <div>Graph</div><div>Cone</div><div>Handoff</div><div class="on">Re-bloom</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="gal-count"><b id="galNow">1</b> / 5</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ ACT 4 · THE TIME CONE ═══════ -->
+<section class="act" id="act-cone" style="height:500vh">
+  <div class="pin">
+    <div class="eyebrow" data-fade>Why a cone beats a circle</div>
+    <div class="line act-type">
+      <span class="w"><i>A</i></span>
+      <span class="w"><i>radius</i></span>
+      <span class="w hot"><i>searches</i></span>
+      <span class="w hot"><i>water</i></span>
+    </div>
+    <div class="cone">
+      <div class="coneCopy" data-fade>
+        <p>A circle drawn around the point last seen grows as the
+        <strong>square of elapsed time</strong>. At walking pace it is under a
+        square mile after ten minutes and roughly twenty-eight after an hour.</p>
+        <p>Most of that circle is unreachable. It is water, freeway, fenced lot,
+        the inside of a block. A radius spends the first hour searching places
+        <strong>nobody could have walked to</strong>.</p>
+        <p>The cone only expands along edges that can actually be travelled in the
+        time available, so the same hour buys a search that is
+        <strong>far smaller and far more likely to contain them</strong>.</p>
+      </div>
+      <div class="coneChart glass">
+        <svg viewBox="0 0 540 300" aria-hidden="true">
+          <defs>
+            <radialGradient id="ring" cx="50%" cy="50%">
+              <stop offset="60%" stop-color="#0FA3D1" stop-opacity="0"/>
+              <stop offset="100%" stop-color="#0FA3D1" stop-opacity=".3"/>
+            </radialGradient>
+          </defs>
+          <g stroke="rgba(10,23,32,.07)" stroke-width="1">
+            <path d="M0 60 H540 M0 120 H540 M0 180 H540 M0 240 H540"/>
+            <path d="M60 0 V300 M150 0 V300 M240 0 V300 M330 0 V300 M420 0 V300"/>
+          </g>
+          <!-- the naive radius -->
+          <circle cx="240" cy="150" r="0" fill="url(#ring)" stroke="rgba(217,96,58,.55)"
+                  stroke-width="1.5" stroke-dasharray="5 5" data-radius/>
+          <!-- the reachable cone: what the road graph actually allows -->
+          <path d="" fill="rgba(15,163,209,.28)" stroke="#0FA3D1" stroke-width="2"
+                stroke-linejoin="round" data-conepath/>
+          <circle cx="240" cy="150" r="6" fill="#06364F"/>
+          <circle cx="240" cy="150" r="13" fill="none" stroke="#06364F" stroke-width="1.5" opacity=".4"/>
+        </svg>
+        <div class="coneRead">
+          <div><div class="k">Elapsed</div><div class="v" data-min>0 min</div></div>
+          <div><div class="k">Radius searches</div><div class="v warn" data-area>0.0 mi&sup2;</div></div>
+          <div><div class="k">Clarity searches</div><div class="v" data-cone>0.0 mi&sup2;</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ ACT 5 · PRIVACY ═══════ -->
+<section class="act" id="act-privacy" style="height:400vh">
+  <div class="pin">
+    <div class="eyebrow" data-fade>Built to be questioned</div>
+    <div class="line act-type">
+      <span class="w"><i>No</i></span>
+      <span class="w hot"><i>faces.</i></span>
+      <span class="w"><i>Ever.</i></span>
+    </div>
+    <div class="mkt">
+      <div class="tier glass" data-fade>
+        <div class="lab">01</div>
+        <div class="fig">Descriptions, not identities</div>
+        <div class="who">The network only ever knows <strong>"red jacket, blue
+        duffel"</strong>. No face embeddings, no enrolment database, nothing that
+        can be turned into a watchlist later. It cannot recognise a person it was
+        not told to look for.</div>
+      </div>
+      <div class="tier glass" data-fade>
+        <div class="lab">02</div>
+        <div class="fig">Searches expire on their own</div>
+        <div class="who">Confidence decays with every frontier that comes back
+        empty. A search that stops finding anything <strong>retires itself</strong>
+        rather than running quietly forever.</div>
+      </div>
+      <div class="tier glass" data-fade>
+        <div class="lab">03</div>
+        <div class="fig">Every search leaves a trail</div>
+        <div class="who">The walker writes its own path into the graph, so there
+        is a permanent record of <strong>exactly which cameras were activated,
+        when, and why</strong>. Auditable by construction, not by policy.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ ACT 6 · MISSION ═══════ -->
+<section class="act" id="act-mission" style="height:500vh">
+  <div class="pin">
+    <div class="eyebrow" data-fade>Why this, why now</div>
+    <div class="mission" data-mission>
+      A child wanders off at a transit station and the cameras that could find her
+      <em>are already there, watching nothing in particular.</em>
+      Clarity is the hour that connects them.
+    </div>
+    <div class="stats">
+      <div class="stat glass" data-fade><div class="big">t&sup2;</div><div class="lb">How fast a search area grows while everyone is still on the phone</div></div>
+      <div class="stat glass" data-fade><div class="big">0</div><div class="lb">Faces recognised, embeddings stored, watchlists created</div></div>
+      <div class="stat glass" data-fade><div class="big">1</div><div class="lb">Program. Cloud, browser and native camera node, type-checked across the boundary</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ ACT 7 · CLOSING ═══════ -->
+<section class="act" id="act-close" style="height:300vh">
+  <div class="pin">
+    <div class="closeMark" data-fade>Clar<span>ity</span></div>
+    <div class="closeSub" data-fade>Every camera, one search</div>
+    <div class="team" data-fade>
+      <div class="teamLab">Team</div>
+      <div class="teamRow">
+        <span>Rameez</span><span>Soham</span><span>Prakhar</span><span>Wali</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var clamp = function(v,a,b){ return v<a?a:(v>b?b:v); };
+  var seg   = function(p,a,b){ return clamp((p-a)/(b-a),0,1); };
+  var ease  = function(t){ return 1-Math.pow(1-t,3); };
+  var mix   = function(a,b,t){ return a+(b-a)*t; };
+
+  /* --- build the title wordmark --- */
+  var markHost = document.getElementById('introMark');
+  if(markHost){
+    'CLARITY'.split('').forEach(function(ch,i){
+      var wrap = document.createElement('span');
+      wrap.className = 'lw' + (i < 4 ? ' hot' : '');   // CLAR gradient, ITY ink
+      var b = document.createElement('b');
+      b.textContent = ch;
+      wrap.appendChild(b);
+      markHost.appendChild(wrap);
+    });
+  }
+
+  /* --- desync the curtain layers so left and right never mirror each other --- */
+  [].slice.call(document.querySelectorAll('.curtain span')).forEach(function(s,i){
+    s.style.animationDelay = (-i*3.4) + 's';
+  });
+
+  /* --- split the mission copy into per-word spans --- */
+  var mission = document.querySelector('[data-mission]');
+  if(mission){
+    // The visible line becomes one span per word with no whitespace between
+    // them (flex gap does the spacing), so copy-paste and screen readers would
+    // get "Achildwandersoff". Keep a readable copy alongside it.
+    var readable = document.createElement('div');
+    readable.className = 'sr-only';
+    readable.textContent = mission.textContent.replace(/\s+/g,' ').trim();
+    mission.parentNode.insertBefore(readable, mission);
+    mission.setAttribute('aria-hidden','true');
+
+    var frag = document.createDocumentFragment();
+    [].slice.call(mission.childNodes).forEach(function(node){
+      var accent = node.nodeType === 1 && node.tagName === 'EM';
+      var text = (node.textContent || '').trim();
+      if(!text) return;
+      text.split(/\s+/).forEach(function(word){
+        var s = document.createElement('span');
+        s.textContent = word;
+        if(accent) s.className = 'acc';
+        frag.appendChild(s);
+      });
+    });
+    mission.textContent = '';
+    mission.appendChild(frag);
+  }
+
+  /* --- collect acts and their animated parts --- */
+  var acts = [].slice.call(document.querySelectorAll('.act')).map(function(el){
+    return {
+      el: el,
+      words:   [].slice.call(el.querySelectorAll('.w > i')),
+      peeks:   [].slice.call(el.querySelectorAll('[data-peek]')),
+      fades:   [].slice.call(el.querySelectorAll('[data-fade]')),
+      slides:  [].slice.call(el.querySelectorAll('[data-slide]')),
+      mwords:  [].slice.call(el.querySelectorAll('[data-mission] span')),
+      title:   el.querySelector('[data-title]'),
+      letters: [].slice.call(el.querySelectorAll('.introMark .lw > b')),
+      grid:    el.querySelector('[data-grid]'),
+      rings:   [].slice.call(el.querySelectorAll('[data-ring]')),
+      scan:    el.querySelector('[data-scan]'),
+      sub:     el.querySelector('[data-sub]'),
+      radius:  el.querySelector('[data-radius]'),
+      conepath:el.querySelector('[data-conepath]'),
+      minEl:   el.querySelector('[data-min]'),
+      areaEl:  el.querySelector('[data-area]'),
+      coneEl:  el.querySelector('[data-cone]')
+    };
+  });
+
+  var rail   = document.getElementById('rail');
+  var galNow = document.getElementById('galNow');
+  var halo   = document.querySelector('[data-halo]');
+  var root   = document.documentElement;
+  var ticking = false;
+
+  /* --- pointer parallax: the light field leans toward the cursor --- */
+  var mx = 0, my = 0, tmx = 0, tmy = 0;
+  if(!reduce){
+    window.addEventListener('mousemove', function(e){
+      tmx = (e.clientX / window.innerWidth  - 0.5) * 2;
+      tmy = (e.clientY / window.innerHeight - 0.5) * 2;
+      onScroll();
+    }, {passive:true});
+  }
+
+  /* The reachable frontier, drawn as a ragged star rather than a circle.
+     Fixed offsets per spoke so it looks like a road network, not noise. */
+  var SPOKES = [1.00,0.42,0.78,0.30,0.92,0.55,0.20,0.70,0.98,0.36,0.62,0.26,
+                0.85,0.48,0.74,0.33,0.90,0.58,0.24,0.66];
+  function conePath(r){
+    var n = SPOKES.length, d = '';
+    for(var i=0;i<n;i++){
+      var a = (i/n) * Math.PI * 2 - Math.PI/2;
+      var rr = r * SPOKES[i];
+      var x = 240 + Math.cos(a)*rr, y = 150 + Math.sin(a)*rr*0.72;
+      d += (i ? ' L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+    }
+    return d + ' Z';
+  }
+  // fraction of the circle the ragged frontier actually covers
+  var CONE_FRAC = (function(){
+    var s = 0; SPOKES.forEach(function(v){ s += v*v; });
+    return s / SPOKES.length;
+  })();
+
+  function render(){
+    ticking = false;
+    var vh = window.innerHeight;
+
+    mx += (tmx - mx) * 0.08;
+    my += (tmy - my) * 0.08;
+    root.style.setProperty('--mx', mx.toFixed(3));
+    root.style.setProperty('--my', my.toFixed(3));
+
+    var docH = document.documentElement.scrollHeight - vh;
+    var gp   = docH>0 ? window.pageYOffset/docH : 0;
+    rail.style.width = (gp*100) + '%';
+
+    halo.style.setProperty('--hx', mix(74, 30, gp) + '%');
+    halo.style.setProperty('--hy', mix(34, 66, gp) + '%');
+    halo.style.setProperty('--hy2', mix(86, 22, gp) + '%');
+
+    if(reduce) return;
+
+    acts.forEach(function(a){
+      var top   = a.el.offsetTop;
+      var span  = a.el.offsetHeight - vh;
+      var p     = span>0 ? clamp((window.pageYOffset - top)/span, 0, 1) : 0;
+
+      // title card: assembles, gets scanned, then pulls away into the hero
+      if(a.title){
+        var ln = a.letters.length;
+        a.letters.forEach(function(b,i){
+          var a0 = (i/ln)*0.22;
+          var t  = ease(seg(p, a0, a0+0.18));
+          // The letters materialise in place rather than rising from a mask.
+          // A mask reveal would leave the landing view blank until the visitor
+          // scrolls, and this act is the first thing they see.
+          b.style.transform = 'translateY(' + ((1-t)*16) + '%) rotateX(' + ((1-t)*-38) + 'deg)';
+          b.style.filter    = 'blur(' + ((1-t)*12).toFixed(1) + 'px)';
+          b.style.opacity   = mix(0.22, 1, t);
+        });
+        var gt = ease(seg(p,0.02,0.40));
+        a.grid.style.opacity   = gt*0.45;
+        a.grid.style.transform = 'scale(' + mix(1.5,1,gt) + ') rotate(' + mix(1.5,0,gt) + 'deg)';
+        a.rings.forEach(function(r,i){
+          var rt = seg(p, 0.08 + i*0.09, 0.62 + i*0.09);
+          r.style.transform = 'scale(' + mix(0.2,3.1,ease(rt)) + ')';
+          r.style.opacity   = Math.min(seg(rt,0,0.18), 1-seg(rt,0.55,1));
+        });
+        var st = seg(p,0.30,0.74);
+        a.scan.style.transform = 'translateX(' + mix(-260,760,st) + '%)';
+        a.scan.style.opacity   = Math.min(seg(st,0,0.15), 1-seg(st,0.85,1)) * 0.75;
+        var bt = ease(seg(p,0.38,0.60));
+        a.sub.style.opacity      = mix(0.18, 0.9, bt);
+        a.sub.style.letterSpacing= mix(0.62,0.42,bt) + 'em';
+        var ex = ease(seg(p,0.76,1));
+        a.title.style.transform = 'scale(' + mix(1,1.09,ex) + ')';
+        a.title.style.opacity   = 1-ex;
+      }
+
+      // the time cone: a circle and a reachable frontier, growing together
+      if(a.radius){
+        var ct  = ease(seg(p, 0.24, 0.92));
+        var min = ct * 60;                      // 0 to 60 minutes elapsed
+        var mi  = min * 0.05;                   // 3 mph on foot
+        var rpx = ct * 168;                     // px radius in the chart
+        a.radius.setAttribute('r', rpx.toFixed(1));
+        a.conepath.setAttribute('d', conePath(rpx));
+        a.minEl.textContent  = Math.round(min) + ' min';
+        a.areaEl.textContent = (Math.PI*mi*mi).toFixed(1) + ' mi²';
+        a.coneEl.textContent = (Math.PI*mi*mi*CONE_FRAC).toFixed(1) + ' mi²';
+      }
+
+      // headline words: mask-reveal, staggered across the first third of the act
+      if(a.words.length){
+        var n = a.words.length;
+        a.words.forEach(function(w,i){
+          var a0 = (i/n)*0.30;
+          var t  = ease(seg(p, a0, a0+0.16));
+          w.style.transform = 'translateY(' + ((1-t)*110) + '%)';
+        });
+      }
+
+      // peekaboo: opens from zero width, shouldering the words apart
+      a.peeks.forEach(function(pk){
+        var t  = ease(seg(p, 0.10, 0.62));
+        var W  = clamp(vw()*0.13, 90, 240);
+        var H  = clamp(vw()*0.085, 60, 150);
+        pk.style.width  = (W*t) + 'px';
+        pk.style.height = (H*mix(0.55,1,t)) + 'px';
+        pk.style.marginLeft = pk.style.marginRight = (t*0.09) + 'em';
+        pk.style.boxShadow =
+          '0 -20px 70px -28px rgba(15,163,209,' + (t*0.95).toFixed(2) + '), ' +
+          '0 24px 54px -22px rgba(6,54,79,' + (t*0.55).toFixed(2) + '), ' +
+          'inset 0 1px 0 rgba(255,255,255,.8)';
+        var inner = pk.firstElementChild;
+        if(inner){
+          inner.style.transform =
+            'translateX(' + ((p-0.5)*-22 + mx*4) + '%) scale(' + mix(1.25,1,t) + ')';
+        }
+      });
+
+      // fade-ups, staggered after the headline lands
+      if(a.fades.length){
+        var fn = a.fades.length;
+        a.fades.forEach(function(f,i){
+          var a0 = 0.30 + (i/fn)*0.28;
+          var t  = ease(seg(p, a0, a0+0.20));
+          f.style.opacity = t;
+          f.style.transform = 'translateY(' + ((1-t)*26) + 'px)';
+        });
+      }
+
+      // gallery: each card scales toward the viewer and dissolves into the next
+      if(a.slides.length){
+        var sn  = a.slides.length;
+        var raw = p*sn;
+        var idx = clamp(Math.round(raw-0.5), 0, sn-1);
+        a.slides.forEach(function(s,i){
+          var local = raw - i;
+          // short deliberate overlap: long enough that no frame is ever blank,
+          // short enough that you never read two cards at once
+          var o = Math.min(seg(local,-0.14,0.10), 1-seg(local,0.84,1.03));
+          var live = o > 0;
+          var z = s.firstElementChild;
+          // An offscreen card left at opacity 0 still costs a composited layer
+          // and gets re-rastered. Take it out of the tree instead.
+          if(s.__live !== live){
+            s.style.visibility = live ? 'visible' : 'hidden';
+            s.style.willChange = live ? 'opacity' : 'auto';
+            z.style.willChange = live ? 'transform' : 'auto';
+            s.__live = live;
+          }
+          s.style.opacity = o;
+          s.style.zIndex  = Math.round(o*100);
+          if(!live) return;
+          var t = clamp((local+0.30)/1.42, 0, 1);
+          z.style.transform    = 'scale(' + mix(0.88,1.06,t) + ') translateZ(0)';
+          z.style.borderRadius = mix(34,10,t) + 'px';
+        });
+        if(galNow) galNow.textContent = idx+1;
+        var acc = a.slides[idx].getAttribute('data-accent');
+        if(acc) root.style.setProperty('--accent', acc);
+      }
+
+      // mission: light words one at a time
+      if(a.mwords.length){
+        var mn = a.mwords.length;
+        a.mwords.forEach(function(s,i){
+          var thresh = 0.10 + (i/mn)*0.55;
+          s.classList.toggle('lit', p >= thresh);
+        });
+      }
+    });
+
+    if(Math.abs(tmx-mx) > 0.002 || Math.abs(tmy-my) > 0.002) onScroll();
+  }
+
+  function vw(){ return window.innerWidth; }
+
+  function onScroll(){
+    if(!ticking){ ticking = true; requestAnimationFrame(render); }
+  }
+
+  window.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', onScroll);
+  window.addEventListener('load', render);
+  render();
+
+  /* --- keyboard: jump act to act --- */
+  document.addEventListener('keydown', function(e){
+    if(['ArrowDown','PageDown',' ','ArrowUp','PageUp'].indexOf(e.key) === -1) return;
+    var fwd = (e.key !== 'ArrowUp' && e.key !== 'PageUp');
+    var y = window.pageYOffset;
+    var tops = acts.map(function(a){ return a.el.offsetTop; });
+    var target = null;
+    if(fwd){
+      for(var i=0;i<tops.length;i++){ if(tops[i] > y+8){ target = tops[i]; break; } }
+    } else {
+      for(var j=tops.length-1;j>=0;j--){ if(tops[j] < y-8){ target = tops[j]; break; } }
+    }
+    if(target !== null){
+      e.preventDefault();
+      window.scrollTo({top:target, behavior:'smooth'});
+    }
+  });
+})();
+</script>
+</body>
+</html>
