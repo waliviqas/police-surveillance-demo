@@ -25,9 +25,9 @@
     --good:#34D399;
     --warn:#FB923C;
     /* glass, on dark: light film + luminous rim */
-    --glass:linear-gradient(155deg,rgba(190,225,255,.16) 0%,rgba(79,168,245,.06) 55%,rgba(234,246,255,.10) 100%);
-    --glass-line:rgba(200,232,255,.28);
-    --glass-shadow:0 0 0 1px rgba(159,212,255,.16), 0 30px 70px -28px rgba(2,12,30,.95), 0 0 60px -20px rgba(79,168,245,.35);
+    --glass:linear-gradient(155deg,rgba(3,22,46,.62) 0%,rgba(5,34,66,.50) 55%,rgba(8,48,92,.56) 100%);
+    --glass-line:rgba(200,232,255,.42);
+    --glass-shadow:0 0 0 1px rgba(159,212,255,.22), 0 34px 80px -26px rgba(1,10,26,.95);
     --inset-hi:inset 0 1px 0 rgba(255,255,255,.42), inset 0 -1px 0 rgba(79,168,245,.22), inset 0 0 30px -14px rgba(234,246,255,.5);
     --accent:79,168,245;
     --mx:0; --my:0;
@@ -222,11 +222,13 @@
     box-shadow:0 0 22px -6px rgba(var(--accent),.7);transform:translate(14px,-50%)}
   .probe b{color:var(--cy-300);font-weight:500}
   .probe u{display:block;text-decoration:none;color:var(--faint);margin-top:3px}
-  .edge{stroke:rgba(120,190,230,.16);stroke-width:1;fill:none}
+  .edge{stroke:rgba(2,26,54,.42);stroke-width:1.1;fill:none}
   .edge.live{stroke:url(#edgeGrad);stroke-width:2.4}
-  .node rect.core{fill:#08182E;stroke:rgba(159,212,255,.22);stroke-width:1}
-  .node rect.halo{fill:none;stroke:rgba(var(--accent),1);stroke-width:2.4;opacity:0}
-  .readout{position:absolute;left:6vw;bottom:8vh;display:flex;gap:34px;flex-wrap:wrap;z-index:3}
+  .node rect.core{fill:#02182F;stroke:rgba(2,26,54,.55);stroke-width:1}
+  .node rect.halo{fill:none;stroke:#02182F;stroke-width:2.8;opacity:0}
+  .readout{position:absolute;left:6vw;bottom:8vh;display:flex;gap:30px;flex-wrap:wrap;z-index:3;
+    padding:16px 24px;background:rgba(3,22,46,.58);border:1px solid rgba(200,232,255,.26);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
   .readout .k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
   .readout .v{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(22px,2.4vw,34px);
     letter-spacing:-.03em;color:var(--ink)}
@@ -239,7 +241,9 @@
     -webkit-background-clip:text;background-clip:text;color:transparent}
   .beat p{color:var(--dim);font-size:15px;line-height:1.7}
   .beat p strong{color:var(--ink);font-weight:500}
-  .clock{position:absolute;right:6vw;top:16vh;text-align:right;z-index:3}
+  .clock{position:absolute;right:6vw;top:16vh;text-align:right;z-index:3;
+    padding:14px 22px;background:rgba(3,22,46,.58);border:1px solid rgba(200,232,255,.26);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
   .clock .t{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(30px,4vw,64px);
     letter-spacing:-.04em;line-height:1;color:var(--ink)}
   .clock .l{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-top:8px}
@@ -251,7 +255,7 @@
   .zoom{position:relative;width:84vw;max-width:1340px;height:70vh;
     display:flex;align-items:center;gap:4vw;padding:5vh 4.5vw;
     border-radius:4px;overflow:hidden;transform-origin:50% 52%;
-    background:linear-gradient(155deg,rgba(255,255,255,.10) 0%,rgba(90,180,240,.05) 100%);
+    background:linear-gradient(155deg,rgba(3,22,46,.60) 0%,rgba(7,44,84,.52) 100%);
     backdrop-filter:blur(18px) saturate(170%);-webkit-backdrop-filter:blur(18px) saturate(170%);
     border:1px solid var(--glass-line);
     box-shadow:0 0 0 1px rgba(34,211,238,.12), 0 40px 90px -40px rgba(0,0,0,.95), var(--inset-hi);
@@ -288,12 +292,12 @@
     border-color:rgba(34,211,238,.28)}
   .steplist div.on::before{content:"▸ ";color:var(--cy-400)}
   .code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:clamp(10px,.9vw,12.5px);
-    line-height:1.75;color:#BEE7F5;background:rgba(4,10,20,.6);
+    line-height:1.75;color:#BEE7F5;background:rgba(2,14,30,.72);
     border:1px solid rgba(34,211,238,.18);border-radius:3px;padding:20px 22px;
     box-shadow:inset 0 1px 0 rgba(255,255,255,.08);white-space:pre;overflow-x:auto}
   .code .k{color:var(--vi-400)} .code .s{color:var(--cy-300)} .code .c{color:var(--faint)}
 
-  .mock{padding:22px;border-radius:3px;background:rgba(4,10,20,.5);
+  .mock{padding:22px;border-radius:3px;background:rgba(2,14,30,.68);
     border:1px solid var(--glass-line);box-shadow:var(--inset-hi)}
   .mock .bar{display:flex;gap:6px;margin-bottom:16px}
   .mock .dot{width:8px;height:8px;background:rgba(255,255,255,.12)}
@@ -436,11 +440,11 @@
       <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <defs>
           <linearGradient id="edgeGrad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#9FD4FF"/><stop offset="1" stop-color="#1C6FD0"/>
+            <stop offset="0" stop-color="#04244A"/><stop offset="1" stop-color="#0B5AA8"/>
           </linearGradient>
         </defs>
         <g data-edges></g>
-        <g data-trail fill="none" stroke="#B9E4FF" stroke-width="5.5"
+        <g data-trail fill="none" stroke="#03203F" stroke-width="5.5"
            stroke-linecap="round" opacity=".95"></g>
         <g data-nodes></g>
       </svg>
@@ -1072,7 +1076,7 @@ void main(){
   // one path drawn three times: a wide soft glow, the body, and a white core.
   // A single stroke cannot be both bright and thick without going muddy.
   var trailGlow = document.createElementNS(SVGNS,'path');
-  trailGlow.setAttribute('stroke','#4FA8F5'); trailGlow.setAttribute('fill','none');
+  trailGlow.setAttribute('stroke','#01142A'); trailGlow.setAttribute('fill','none');
   trailGlow.setAttribute('stroke-linecap','round'); trailGlow.setAttribute('stroke-linejoin','round');
   trailGlow.style.opacity = '.22';
   var trailCore = document.createElementNS(SVGNS,'path');
@@ -1162,7 +1166,7 @@ void main(){
       if(on && fresh > 0.15) frontier++;
       var lit = on ? 1 : 0.34;
       el.core.style.fill = on ? (i===HIT && phase2>0 ? '#EAF6FF' : '#4FA8F5') : '#08182E';
-      el.core.style.stroke = on ? '#FFFFFF' : 'rgba(140,200,230,.2)';
+      el.core.style.stroke = on ? '#02182F' : 'rgba(2,26,54,.45)';
       el.core.style.strokeWidth = on ? 2 : 1;
       var px = PJ[i].x, py = PJ[i].y, pf = PJ[i].f;
       var hs = (16 + fresh*72) * pf;             // the frontier ring, squared
@@ -1187,8 +1191,8 @@ void main(){
         el.core.setAttribute('y', (py - ms/2).toFixed(2));
         el.core.setAttribute('width', ms.toFixed(2));
         el.core.setAttribute('height', ms.toFixed(2));
-        el.core.style.fill = '#B9E4FF';
-        el.core.style.stroke = '#FFFFFF';
+        el.core.style.fill = '#FFFFFF';
+        el.core.style.stroke = '#02182F';
         el.core.style.strokeWidth = (1.5 + lock*2).toFixed(1);
         el.core.style.opacity = 1;
       }
