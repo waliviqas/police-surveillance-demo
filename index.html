@@ -64,14 +64,18 @@
   @keyframes drift2{to{transform:translate3d(-11vw,9vh,0) scale(.86)}}
   @keyframes drift3{to{transform:translate3d(7vw,-9vh,0) scale(1.2)}}
 
-  /* fine grid, the way instrument panels are ruled */
-  .grid{position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.5;
-    background-image:
-      linear-gradient(rgba(120,190,230,.05) 1px,transparent 1px),
-      linear-gradient(90deg,rgba(120,190,230,.05) 1px,transparent 1px);
-    background-size:72px 72px;
-    -webkit-mask-image:radial-gradient(120% 80% at 50% 40%,#000 20%,transparent 80%);
-            mask-image:radial-gradient(120% 80% at 50% 40%,#000 20%,transparent 80%)}
+  /* a faint neural mesh: layered nodes, fully connected, with signal travelling
+     along a handful of paths. This is the ambient layer, not the camera graph. */
+  .neural{position:fixed;inset:0;z-index:-2;pointer-events:none;
+    -webkit-mask-image:radial-gradient(125% 85% at 50% 45%,#000 15%,transparent 82%);
+            mask-image:radial-gradient(125% 85% at 50% 45%,#000 15%,transparent 82%)}
+  .neural svg{width:100%;height:100%;display:block}
+  .neural .syn{stroke:rgba(120,200,235,.16);stroke-width:.6;fill:none}
+  .neural .cell{fill:rgba(160,220,245,.30)}
+  .neural .fire{stroke:rgba(var(--accent),.95);stroke-width:1.5;fill:none;
+    stroke-linecap:round;filter:drop-shadow(0 0 5px rgba(var(--accent),.9));
+    animation:fire var(--fd) linear infinite;animation-delay:var(--fdel)}
+  @keyframes fire{from{stroke-dashoffset:var(--flen)}to{stroke-dashoffset:0}}
 
   /* ══════════ light curtains ══════════
      One fixed field for the whole page, so the light never seams between acts.
@@ -142,6 +146,24 @@
     text-transform:uppercase;letter-spacing:.24em;color:var(--ink)}
   .mark span{background:linear-gradient(120deg,var(--cy-300),var(--vi-400));
     -webkit-background-clip:text;background-clip:text;color:transparent}
+  /* a signal that circulates the frame: top runs left, right runs down, and
+     so on, so the beam visibly changes side as you scroll. Brightness tracks
+     scroll velocity, which is what makes it feel like the page is answering. */
+  .frame{position:fixed;inset:0;z-index:150;pointer-events:none;mix-blend-mode:screen}
+  .fb{position:absolute;opacity:0}
+  .fb.t,.fb.b{height:2px;width:38%}
+  .fb.l,.fb.r{width:2px;height:38%}
+  .fb.t{top:0;left:0;background:linear-gradient(90deg,transparent,rgba(var(--accent),1),transparent)}
+  .fb.b{bottom:0;left:0;background:linear-gradient(90deg,transparent,rgba(139,124,255,1),transparent)}
+  .fb.l{left:0;top:0;background:linear-gradient(180deg,transparent,rgba(139,124,255,1),transparent)}
+  .fb.r{right:0;top:0;background:linear-gradient(180deg,transparent,rgba(var(--accent),1),transparent)}
+  /* HUD brackets, so the viewport itself reads as an instrument */
+  .fc{position:absolute;width:22px;height:22px;border:1px solid rgba(var(--accent),.5);opacity:.5}
+  .fc.tl{top:14px;left:14px;border-right:0;border-bottom:0}
+  .fc.tr{top:14px;right:14px;border-left:0;border-bottom:0}
+  .fc.bl{bottom:14px;left:14px;border-right:0;border-top:0}
+  .fc.br{bottom:14px;right:14px;border-left:0;border-top:0}
+
   .rail{position:fixed;top:0;left:0;height:2px;width:0;z-index:300;
     background:linear-gradient(90deg,var(--cy-300),var(--vi-400));
     box-shadow:0 0 16px rgba(34,211,238,.9)}
@@ -170,10 +192,6 @@
   .lede{margin-top:30px;max-width:640px;font-size:clamp(15px,1.3vw,18px);line-height:1.7;
     color:var(--dim);opacity:0}
   .lede strong{color:var(--ink);font-weight:500}
-  .scrollcue{position:absolute;bottom:32px;left:6vw;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.2em;
-    text-transform:uppercase;color:var(--faint)}
-  .scrollcue i{display:inline-block;font-style:normal;animation:bob 2.2s ease-in-out infinite}
-  @keyframes bob{50%{transform:translateY(5px)}}
 
   /* ══════════ glass ══════════ */
   .glass{position:relative;overflow:hidden;background:var(--glass);
@@ -247,6 +265,10 @@
   .zoom::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
     background:linear-gradient(140deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,0) 36%),
                radial-gradient(60% 70% at 88% 50%,rgba(var(--accent),.14),transparent 70%)}
+  .zoom .sweep{position:absolute;top:-40%;height:180%;width:30%;pointer-events:none;z-index:2;
+    background:linear-gradient(100deg,transparent,rgba(255,255,255,.16) 45%,
+                                       rgba(var(--accent),.22) 60%,transparent);
+    filter:blur(14px);opacity:0}
   .zoom .txt{flex:1 1 46%;position:relative;z-index:1}
   .zoom .vis{flex:1 1 54%;position:relative;z-index:1}
   .slide h2{font-family:'Space Grotesk',sans-serif;font-weight:700;
@@ -329,7 +351,7 @@
     .zoom{transform:none !important;height:auto;width:88vw}
     .gal-frame{height:auto} .act{height:auto !important}
     .pin{position:relative;height:auto;padding:12vh 6vw}
-    .blob,.curtain span,.curtain i,.w.hot > i,.scrollcue i{animation:none !important}
+    .blob,.curtain span,.curtain i,.w.hot > i{animation:none !important}
   }
   @media (max-width:900px){
     .cards,.mkt{grid-template-columns:1fr;flex-direction:column}
@@ -344,10 +366,14 @@
 <div class="liquid" aria-hidden="true">
   <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
 </div>
-<div class="grid" aria-hidden="true"></div>
+<div class="neural" aria-hidden="true"><svg preserveAspectRatio="none" viewBox="0 0 1600 900" data-neural></svg></div>
 <div class="lightfield" aria-hidden="true">
   <div class="curtain l"><span class="c1"><u></u></span><span class="c2"><u></u></span><span class="c3"><u></u></span><i></i></div>
   <div class="curtain r"><span class="c1"><u></u></span><span class="c2"><u></u></span><span class="c3"><u></u></span><i></i></div>
+</div>
+<div class="frame" aria-hidden="true">
+  <span class="fb t"></span><span class="fb r"></span><span class="fb b"></span><span class="fb l"></span>
+  <span class="fc tl"></span><span class="fc tr"></span><span class="fc bl"></span><span class="fc br"></span>
 </div>
 <div class="rail" id="rail"></div>
 
@@ -360,7 +386,6 @@
       <div class="line" id="introMark" style="font-size:clamp(46px,11vw,180px);font-weight:800;letter-spacing:-.055em"></div>
       <div class="closeSub" data-sub style="margin-top:22px;opacity:0">Every camera, one search</div>
     </div>
-    <div class="scrollcue">Scroll <i>↓</i></div>
   </div>
 </section>
 
@@ -381,7 +406,6 @@
       only as fast as a person could move, handing context from one camera to the
       next until someone is found.
     </p>
-    <div class="scrollcue">Scroll to explore <i>↓</i></div>
   </div>
 </section>
 
@@ -457,7 +481,7 @@
   <div class="pin" style="padding:0">
     <div class="gal-frame">
       <div class="slide" data-slide data-accent="34,211,238">
-        <div class="zoom">
+        <div class="zoom"><span class="sweep"></span>
           <div class="txt"><h2>Describe them.<br><em>We search.</em></h2>
             <p>Where they were last seen, when, what they were wearing, how they
             travel. No photo, no ID, <strong>no biometrics</strong>. That is the
@@ -473,7 +497,7 @@
         </div>
       </div>
       <div class="slide" data-slide data-accent="103,232,249">
-        <div class="zoom">
+        <div class="zoom"><span class="sweep"></span>
           <div class="txt"><h2>Every edge is<br><em>a travel time.</em></h2>
             <p>Cameras are nodes. An edge doesn't mean "these are near each other",
             it means <strong>a person leaving here can be there in four minutes</strong>.
@@ -484,7 +508,7 @@
         </div>
       </div>
       <div class="slide" data-slide data-accent="139,124,255">
-        <div class="zoom">
+        <div class="zoom"><span class="sweep"></span>
           <div class="txt"><h2>The alert is<br><em>a walker.</em></h2>
             <p>It spawns at the point last seen and expands only along edges it
             could have covered in the elapsed time. A camera nine minutes out
@@ -507,7 +531,7 @@
         </div>
       </div>
       <div class="slide" data-slide data-accent="255,92,168">
-        <div class="zoom">
+        <div class="zoom"><span class="sweep"></span>
           <div class="txt"><h2>On a hit,<br><em>it re-blooms.</em></h2>
             <p>The walker relocates to that camera, resets its clock and expands
             again from the new position. The confirmed path is written back into
@@ -585,6 +609,63 @@
   [].slice.call(document.querySelectorAll('.curtain span')).forEach(function(s,i){
     s.style.animationDelay = (-i*3.4)+'s';
   });
+
+  /* ── the ambient neural mesh ────────────────────────────────────────────
+     Layered nodes, fully connected between adjacent layers, drawn once and
+     left alone. A handful of synapses carry a travelling pulse so the mesh
+     reads as thinking rather than as decoration. */
+  (function(){
+    var svg = document.querySelector('[data-neural]');
+    if(!svg) return;
+    var NS = 'http://www.w3.org/2000/svg';
+    var LAYERS = [5, 9, 11, 9, 5], layer = [], x0 = -60, span = 1720;
+    LAYERS.forEach(function(count, li){
+      var col = [], x = x0 + (li/(LAYERS.length-1))*span;
+      for(var i=0;i<count;i++){
+        col.push({x: x, y: 110 + (i+0.5)*(680/count) + (i%2?18:-18)});
+      }
+      layer.push(col);
+    });
+    var syn = document.createElementNS(NS,'g');
+    var cells = document.createElementNS(NS,'g');
+    var fires = document.createElementNS(NS,'g');
+    var links = [];
+    for(var l=0;l<layer.length-1;l++){
+      layer[l].forEach(function(a){
+        layer[l+1].forEach(function(b){
+          var ln = document.createElementNS(NS,'line');
+          ln.setAttribute('x1',a.x.toFixed(1)); ln.setAttribute('y1',a.y.toFixed(1));
+          ln.setAttribute('x2',b.x.toFixed(1)); ln.setAttribute('y2',b.y.toFixed(1));
+          ln.setAttribute('class','syn');
+          syn.appendChild(ln);
+          links.push({a:a,b:b});
+        });
+      });
+    }
+    layer.forEach(function(col){
+      col.forEach(function(n){
+        var c = document.createElementNS(NS,'circle');
+        c.setAttribute('cx',n.x.toFixed(1)); c.setAttribute('cy',n.y.toFixed(1));
+        c.setAttribute('r','2.6'); c.setAttribute('class','cell');
+        cells.appendChild(c);
+      });
+    });
+    // a fixed scatter of firing synapses, spread across the mesh
+    for(var f=0; f<18; f++){
+      var lk = links[Math.floor((f*97 + 13) % links.length)];
+      var len = Math.hypot(lk.b.x-lk.a.x, lk.b.y-lk.a.y);
+      var ln2 = document.createElementNS(NS,'line');
+      ln2.setAttribute('x1',lk.a.x.toFixed(1)); ln2.setAttribute('y1',lk.a.y.toFixed(1));
+      ln2.setAttribute('x2',lk.b.x.toFixed(1)); ln2.setAttribute('y2',lk.b.y.toFixed(1));
+      ln2.setAttribute('class','fire');
+      ln2.style.strokeDasharray = '14 ' + len.toFixed(0);
+      ln2.style.setProperty('--flen', (len+14).toFixed(0));
+      ln2.style.setProperty('--fd', (2.6 + (f%5)*0.9).toFixed(1) + 's');
+      ln2.style.setProperty('--fdel', (-(f*0.63).toFixed(2)) + 's');
+      fires.appendChild(ln2);
+    }
+    svg.appendChild(syn); svg.appendChild(fires); svg.appendChild(cells);
+  })();
 
   /* ══════════════════════════════════════════════════════════════════════
      THE CAMERA GRAPH
@@ -816,6 +897,9 @@
   var galNow = document.querySelector('[data-galnow]');
   var root = document.documentElement;
   var ticking = false, mx=0, my=0, tmx=0, tmy=0;
+  var beams = {t:document.querySelector('.fb.t'), r:document.querySelector('.fb.r'),
+               b:document.querySelector('.fb.b'), l:document.querySelector('.fb.l')};
+  var lastY = window.pageYOffset, vel = 0;
 
   if(!reduce){
     window.addEventListener('mousemove', function(e){
@@ -832,8 +916,27 @@
     root.style.setProperty('--mx', mx.toFixed(3));
     root.style.setProperty('--my', my.toFixed(3));
     var docH = document.documentElement.scrollHeight - vh;
-    rail.style.width = ((docH>0 ? window.pageYOffset/docH : 0)*100) + '%';
+    var gp = docH>0 ? window.pageYOffset/docH : 0;
+    rail.style.width = (gp*100) + '%';
+
+    // scroll velocity, smoothed. The frame answers how hard you are scrolling.
+    var dy = window.pageYOffset - lastY; lastY = window.pageYOffset;
+    vel += (Math.min(Math.abs(dy)/26, 1) - vel) * (Math.abs(dy) > vel*26 ? 0.5 : 0.06);
+    if(vel > 0.004) onScroll();
+
     if(reduce) return;
+
+    // one signal circulating the frame: each edge runs a different way, so the
+    // beam visibly changes side as you keep scrolling
+    var circ = gp * 5;                       // laps of the frame across the deck
+    var run  = function(k){ return ((circ + k) % 1); };
+    var lit  = 0.18 + vel*0.85;
+    beams.t.style.transform = 'translateX(' + ((run(0)*162 - 40)) + 'vw)';
+    beams.r.style.transform = 'translateY(' + ((run(0.25)*162 - 40)) + 'vh)';
+    beams.b.style.transform = 'translateX(' + ((1-run(0.5))*162 - 40) + 'vw)';
+    beams.l.style.transform = 'translateY(' + ((1-run(0.75))*162 - 40) + 'vh)';
+    beams.t.style.opacity = beams.r.style.opacity =
+    beams.b.style.opacity = beams.l.style.opacity = Math.min(lit, 1);
 
     acts.forEach(function(a){
       var span = a.el.offsetHeight - vh;
@@ -894,8 +997,18 @@
           s.style.opacity = o; s.style.zIndex = Math.round(o*100);
           if(!live) return;
           var t = clamp((local+0.30)/1.42, 0, 1);
-          z.style.transform = 'scale(' + mix(0.88,1.06,t) + ') translateZ(0)';
+          // comes at you, and leans toward the cursor while it does
+          z.style.transform =
+            'perspective(1400px) rotateY(' + (mx*3.2).toFixed(2) + 'deg) rotateX(' +
+            (-my*2.2).toFixed(2) + 'deg) scale(' + mix(0.88,1.06,t) + ') translateZ(0)';
           z.style.borderRadius = mix(6,2,t) + 'px';
+          // a light sweep crosses the card as it arrives
+          var sw = z.querySelector('.sweep');
+          if(sw){
+            var st = seg(t, 0.10, 0.72);
+            sw.style.transform = 'translateX(' + mix(-140, 420, st) + '%) rotate(8deg)';
+            sw.style.opacity = Math.min(seg(st,0,0.18), 1-seg(st,0.8,1)) * 0.9;
+          }
         });
         if(galNow) galNow.textContent = idx+1;
         var acc = a.slides[idx].getAttribute('data-accent');
