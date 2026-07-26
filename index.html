@@ -66,24 +66,23 @@
 
   /* a faint neural mesh: layered nodes, fully connected, with signal travelling
      along a handful of paths. This is the ambient layer, not the camera graph. */
-  .neural{position:fixed;inset:0;z-index:-2;pointer-events:none;
+  .neural{position:fixed;inset:0;z-index:-2;pointer-events:none;contain:strict;
     -webkit-mask-image:radial-gradient(125% 85% at 50% 45%,#000 15%,transparent 82%);
             mask-image:radial-gradient(125% 85% at 50% 45%,#000 15%,transparent 82%)}
   .neural svg{width:100%;height:100%;display:block}
   .neural .syn{stroke:rgba(140,215,245,.85);stroke-width:.7;fill:none}
   .neural .cell{fill:rgba(185,235,250,.9)}
   .neural .mbase{opacity:.9}
-  /* the clarity lens: the bright copy is only visible where you are looking */
-  .neural .mbright{opacity:.95;
-    -webkit-mask-image:radial-gradient(circle 260px at var(--cx,50%) var(--cy,50%),
-      #000 0%,rgba(0,0,0,.45) 42%,transparent 72%);
-            mask-image:radial-gradient(circle 260px at var(--cx,50%) var(--cy,50%),
-      #000 0%,rgba(0,0,0,.45) 42%,transparent 72%)}
-  .neural .mbright .syn{stroke:rgba(var(--accent),1);stroke-width:.9}
-  .neural .mbright .cell{fill:rgba(207,250,254,.95)}
-  .neural svg{transition:none}
-  .neural .fire{stroke:rgba(var(--accent),.95);stroke-width:1.5;fill:none;
-    stroke-linecap:round;filter:drop-shadow(0 0 5px rgba(var(--accent),.9));
+  /* the clarity lens: one blended disc that brightens the mesh beneath it.
+     Duplicating the mesh and masking it cost ~260 extra nodes and a full
+     re-raster on every pointer move; this is a single composited layer. */
+  .lens{position:fixed;top:0;left:0;width:620px;height:620px;margin:-310px 0 0 -310px;
+    z-index:-2;pointer-events:none;mix-blend-mode:screen;
+    background:radial-gradient(circle,rgba(var(--accent),.30) 0%,
+      rgba(var(--accent),.13) 38%,transparent 70%);
+    will-change:transform}
+  .neural .fire{stroke:rgba(var(--accent),1);stroke-width:2.2;fill:none;
+    stroke-linecap:round;opacity:.85;
     animation:fire var(--fd) linear infinite;animation-delay:var(--fdel)}
   @keyframes fire{from{stroke-dashoffset:var(--flen)}to{stroke-dashoffset:0}}
 
@@ -386,6 +385,7 @@
 <div class="liquid" aria-hidden="true">
   <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
 </div>
+<div class="lens" data-lens aria-hidden="true"></div>
 <div class="neural" aria-hidden="true"><svg preserveAspectRatio="none" viewBox="0 0 1600 900" data-neural></svg></div>
 <div class="lightfield" aria-hidden="true">
   <div class="curtain l"><span class="c1"><u></u></span><span class="c2"><u></u></span><span class="c3"><u></u></span><i></i></div>
@@ -467,15 +467,11 @@
           <linearGradient id="edgeGrad" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stop-color="#67E8F9"/><stop offset="1" stop-color="#8B7CFF"/>
           </linearGradient>
-          <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
-            <feGaussianBlur stdDeviation="7" result="b"/>
-            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
         </defs>
         <g data-edges></g>
-        <g data-trail fill="none" stroke="#FF5CA8" stroke-width="2.6"
-           stroke-linecap="round" filter="url(#glow)" opacity=".95"></g>
-        <g data-nodes filter="url(#glow)"></g>
+        <g data-trail fill="none" stroke="#FF5CA8" stroke-width="3"
+           stroke-linecap="round" opacity=".95"></g>
+        <g data-nodes></g>
       </svg>
     </div>
 
@@ -637,7 +633,7 @@
      ruled net reads as a diagram; this reads as tissue.
      Two copies are stacked — a faint base, and a bright one revealed only
      under the cursor, so moving the pointer brings that patch into focus. */
-  var meshNodes = [], meshBright = null;
+  var meshNodes = [], lensEl = null;
   (function(){
     var svg = document.querySelector('[data-neural]');
     if(!svg) return;
@@ -697,9 +693,8 @@
     }
 
     var base = build('mbase');
-    meshBright = build('mbright');
     var fires = document.createElementNS(NS,'g');
-    for(var f=0; f<20; f++){
+    for(var f=0; f<9; f++){
       var lk = links[Math.floor(mr()*links.length)];
       var len = Math.hypot(lk.b.x-lk.a.x, lk.b.y-lk.a.y);
       var ln2 = document.createElementNS(NS,'line');
@@ -712,7 +707,7 @@
       ln2.style.setProperty('--fdel',(-(mr()*7).toFixed(2))+'s');
       fires.appendChild(ln2);
     }
-    svg.appendChild(base); svg.appendChild(meshBright); svg.appendChild(fires);
+    svg.appendChild(base); svg.appendChild(fires);
     meshNodes = layer;
   })();
 
@@ -891,7 +886,7 @@
 
     lastT1 = t1; lastT2 = phase2>0 ? t2 : -1;
     // the volume turns slowly as the search runs, and leans with the cursor
-    project((p-0.5)*0.40 + mx*0.26, my*0.16 - 0.05);
+    project((p-0.5)*0.44, -0.06);
     var reached = 0, frontier = 0;
     for(var i=0;i<N.length;i++){
       var d1 = A1.node[i], d2 = A2.node[i];
@@ -1013,16 +1008,16 @@
   var lastY = window.pageYOffset, vel = 0;
 
   var neuralSvg = document.querySelector('[data-neural]');
+  lensEl = document.querySelector('[data-lens]');
   if(!reduce){
     window.addEventListener('mousemove', function(e){
       tmx = (e.clientX/window.innerWidth - .5)*2;
       tmy = (e.clientY/window.innerHeight - .5)*2;
       // the clarity lens tracks the pointer directly, no easing, so the mesh
       // resolves under the cursor the instant it moves
-      if(meshBright){
-        meshBright.style.setProperty('--cx', (e.clientX/window.innerWidth*100).toFixed(2)+'%');
-        meshBright.style.setProperty('--cy', (e.clientY/window.innerHeight*100).toFixed(2)+'%');
-      }
+      // the lens is a transform, so it never touches layout or paint
+      if(lensEl) lensEl.style.transform =
+        'translate3d(' + e.clientX + 'px,' + e.clientY + 'px,0)';
       onScroll();
     }, {passive:true});
   }
