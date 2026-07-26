@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Clarity — every camera, one search</title>
+<title>Clarity · every camera, one search</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -52,13 +52,13 @@
     background:radial-gradient(120% 90% at 50% 0%,#0A1526 0%,var(--void-2) 45%,var(--void) 100%)}
   .blob{position:absolute;border-radius:50%;filter:blur(80px);will-change:transform;opacity:.55}
   .b1{width:60vw;height:60vw;left:-16vw;top:-14vw;
-      background:radial-gradient(circle,rgba(var(--accent),.55),transparent 62%);
+      background:radial-gradient(circle,rgba(var(--accent),.78),transparent 62%);
       animation:drift1 28s ease-in-out infinite alternate}
   .b2{width:52vw;height:52vw;right:-12vw;top:10vh;
       background:radial-gradient(circle,rgba(108,92,231,.6),transparent 62%);
       animation:drift2 34s ease-in-out infinite alternate}
   .b3{width:50vw;height:50vw;left:24vw;bottom:-20vw;
-      background:radial-gradient(circle,rgba(var(--accent),.4),transparent 62%);
+      background:radial-gradient(circle,rgba(var(--accent),.6),transparent 62%);
       animation:drift3 40s ease-in-out infinite alternate}
   @keyframes drift1{to{transform:translate3d(9vw,7vh,0) scale(1.15)}}
   @keyframes drift2{to{transform:translate3d(-11vw,9vh,0) scale(.86)}}
@@ -79,7 +79,7 @@
       #000 0%,rgba(0,0,0,.45) 42%,transparent 72%);
             mask-image:radial-gradient(circle 260px at var(--cx,50%) var(--cy,50%),
       #000 0%,rgba(0,0,0,.45) 42%,transparent 72%)}
-  .neural .mbright .syn{stroke:rgba(var(--accent),.85);stroke-width:.8}
+  .neural .mbright .syn{stroke:rgba(var(--accent),1);stroke-width:.9}
   .neural .mbright .cell{fill:rgba(207,250,254,.95)}
   .neural svg{transition:none}
   .neural .fire{stroke:rgba(var(--accent),.95);stroke-width:1.5;fill:none;
@@ -168,7 +168,7 @@
   .fb.l{left:0;top:0;background:linear-gradient(180deg,transparent,rgba(139,124,255,1),transparent)}
   .fb.r{right:0;top:0;background:linear-gradient(180deg,transparent,rgba(var(--accent),1),transparent)}
   /* HUD brackets, so the viewport itself reads as an instrument */
-  .fc{position:absolute;width:22px;height:22px;border:1px solid rgba(var(--accent),.5);opacity:.5}
+  .fc{position:absolute;width:22px;height:22px;border:1px solid rgba(var(--accent),.75);opacity:.7}
   .fc.tl{top:14px;left:14px;border-right:0;border-bottom:0}
   .fc.tr{top:14px;right:14px;border-left:0;border-bottom:0}
   .fc.bl{bottom:14px;left:14px;border-right:0;border-top:0}
@@ -730,7 +730,8 @@
     for(var c=0;c<COLS;c++){
       N.push({
         x: 90 + c*(W-180)/(COLS-1) + (rnd()-0.5)*74,
-        y: 80 + r*(H-160)/(ROWS-1) + (rnd()-0.5)*64
+        y: 80 + r*(H-160)/(ROWS-1) + (rnd()-0.5)*64,
+        z: (rnd()-0.5)*460          // the graph has thickness
       });
     }
   }
@@ -863,6 +864,22 @@
   }
 
   var lastT1 = 0, lastT2 = -1;
+  // perspective projection. Rotating a volume rather than tilting a plane is
+  // the difference between something that looks 3D and something that is.
+  var CX = 800, CY = 450, FOCAL = 1500;
+  var PJ = N.map(function(){ return {x:0,y:0,f:1}; });
+  function project(rot, pitch){
+    var cs = Math.cos(rot), sn = Math.sin(rot);
+    var cp = Math.cos(pitch), sp = Math.sin(pitch);
+    for(var i=0;i<N.length;i++){
+      var dx = N[i].x-CX, dy = N[i].y-CY, dz = N[i].z;
+      var rx = dx*cs - dz*sn, rz = dx*sn + dz*cs;      // yaw
+      var ry = dy*cp - rz*sp; rz = dy*sp + rz*cp;      // pitch
+      var f  = FOCAL/(FOCAL-rz);
+      PJ[i].x = CX + rx*f; PJ[i].y = CY + ry*f; PJ[i].f = f;
+    }
+  }
+
   function renderSearch(p){
     // p 0→1 across the act. The hit lands at 0.56, then the second bloom runs.
     var phase1 = seg(p, 0.04, 0.56);
@@ -873,6 +890,8 @@
     var t2 = phase2 * A2.max * 0.72;
 
     lastT1 = t1; lastT2 = phase2>0 ? t2 : -1;
+    // the volume turns slowly as the search runs, and leans with the cursor
+    project((p-0.5)*0.40 + mx*0.26, my*0.16 - 0.05);
     var reached = 0, frontier = 0;
     for(var i=0;i<N.length;i++){
       var d1 = A1.node[i], d2 = A2.node[i];
@@ -885,26 +904,38 @@
       if(on) reached++;
       if(on && fresh > 0.15) frontier++;
       var lit = on ? 1 : 0.34;
-      el.core.style.opacity = lit;
       el.core.style.fill = on ? (i===HIT && phase2>0 ? '#FF5CA8' : '#22D3EE') : '#0B1725';
       el.core.style.stroke = on ? 'rgba(207,250,254,.9)' : 'rgba(140,200,230,.28)';
-      var hs = 10 + fresh*46;                    // the frontier ring, squared
-      el.halo.setAttribute('x', (el.halo.__cx - hs/2).toFixed(1));
-      el.halo.setAttribute('y', (el.halo.__cy - hs/2).toFixed(1));
+      var px = PJ[i].x, py = PJ[i].y, pf = PJ[i].f;
+      var hs = (10 + fresh*46) * pf;             // the frontier ring, squared
+      el.halo.setAttribute('x', (px - hs/2).toFixed(1));
+      el.halo.setAttribute('y', (py - hs/2).toFixed(1));
       el.halo.setAttribute('width', hs.toFixed(1));
       el.halo.setAttribute('height', hs.toFixed(1));
       el.halo.style.opacity = on ? fresh*0.55 : 0;
-      var cs = el.core.__base * (1 + (on ? fresh*0.55 : 0));
-      el.core.setAttribute('x', (el.halo.__cx - cs/2).toFixed(2));
-      el.core.setAttribute('y', (el.halo.__cy - cs/2).toFixed(2));
+      var cs = el.core.__base * (1 + (on ? fresh*0.55 : 0)) * pf;
+      el.core.setAttribute('x', (px - cs/2).toFixed(2));
+      el.core.setAttribute('y', (py - cs/2).toFixed(2));
       el.core.setAttribute('width', cs.toFixed(2));
       el.core.setAttribute('height', cs.toFixed(2));
+      el.hit.setAttribute('x', (px-17).toFixed(1));
+      el.hit.setAttribute('y', (py-17).toFixed(1));
+      // nearer cameras read brighter, which is what sells the depth
+      el.core.style.opacity = lit * clamp(0.45 + (pf-0.75)*1.5, 0.3, 1);
     }
     for(var e=0;e<E.length;e++){
       var live = A1.edge[e] <= t1 || (phase2>0 && A2.edge[e] <= t2);
-      edgeEls[e].setAttribute('class', 'edge' + (live ? ' live' : ''));
-      edgeEls[e].style.opacity = live ? 0.85 : 0.32;
+      var pa = PJ[E[e].a], pb = PJ[E[e].b];
+      var le = edgeEls[e];
+      le.setAttribute('x1',pa.x.toFixed(1)); le.setAttribute('y1',pa.y.toFixed(1));
+      le.setAttribute('x2',pb.x.toFixed(1)); le.setAttribute('y2',pb.y.toFixed(1));
+      le.setAttribute('class', 'edge' + (live ? ' live' : ''));
+      le.style.opacity = (live ? 0.85 : 0.28) * clamp((pa.f+pb.f)/2 - 0.35, 0.35, 1.2);
     }
+    // the confirmed trail is reprojected too, or it would float free of the graph
+    trailEl.setAttribute('d', TRAIL.map(function(i,k){
+      return (k?'L':'M') + PJ[i].x.toFixed(1) + ' ' + PJ[i].y.toFixed(1);
+    }).join(' '));
     // the confirmed trail draws itself once the hit lands
     var tr = ease(seg(p, 0.58, 0.72));
     trailEl.style.strokeDashoffset = trailLen * (1 - tr);
@@ -1010,6 +1041,14 @@
     var gp = docH>0 ? window.pageYOffset/docH : 0;
     rail.style.width = (gp*100) + '%';
 
+    // The accent walks cyan -> violet -> pink across the deck, and everything
+    // keyed to it walks with it: blobs, halo, frame beams, glass rims, the
+    // lens, the node cores. One variable, so the whole page warms together.
+    var A = [[34,211,238],[124,120,255],[255,92,168]];
+    var seat = gp*(A.length-1), si = Math.min(Math.floor(seat), A.length-2), sf = seat-si;
+    var acc = A[si].map(function(c,k){ return Math.round(mix(c, A[si+1][k], sf)); });
+    root.style.setProperty('--accent', acc.join(','));
+
     // scroll velocity, smoothed. The frame answers how hard you are scrolling.
     var dy = window.pageYOffset - lastY; lastY = window.pageYOffset;
     vel += (Math.min(Math.abs(dy)/26, 1) - vel) * (Math.abs(dy) > vel*26 ? 0.5 : 0.06);
@@ -1102,8 +1141,6 @@
           }
         });
         if(galNow) galNow.textContent = idx+1;
-        var acc = a.slides[idx].getAttribute('data-accent');
-        if(acc) root.style.setProperty('--accent', acc);
       }
     });
     if(Math.abs(tmx-mx)>0.002 || Math.abs(tmy-my)>0.002) onScroll();
