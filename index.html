@@ -129,10 +129,15 @@
 
   /* ══════════ nav ══════════ */
   .mark{position:fixed;top:26px;left:3vw;z-index:200;pointer-events:none;
-    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;
-    text-transform:uppercase;letter-spacing:.24em;color:var(--ink)}
-  .mark span{background:linear-gradient(120deg,var(--cy-300),var(--vi-400));
-    -webkit-background-clip:text;background-clip:text;color:transparent}
+    width:66px;height:40px;color:var(--ink);filter:drop-shadow(0 0 14px rgba(127,196,255,.34))}
+  .mark svg{display:block;width:100%;height:100%;overflow:visible}
+  .mark .pupil{transform-box:fill-box;transform-origin:center;
+    animation:pupil-record 1.45s ease-in-out infinite}
+  @keyframes pupil-record{
+    0%,38%,100%{opacity:1;transform:scale(1)}
+    55%{opacity:.24;transform:scale(.68)}
+    72%{opacity:1;transform:scale(1)}
+  }
   /* a signal that circulates the frame: top runs left, right runs down, and
      so on, so the beam visibly changes side as you scroll. Brightness tracks
      scroll velocity, which is what makes it feel like the page is answering. */
@@ -199,9 +204,10 @@
       linear-gradient(var(--cy-300),var(--cy-300)) right bottom/1px 11px no-repeat}
 
   .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:52px}
-  .card{padding:44px 34px;opacity:0;border-radius:26px;min-height:210px;
+  .card{padding:40px 36px;opacity:0;border-radius:26px;min-height:210px;
     display:flex;align-items:center;
     transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s,border-color .35s}
+  .card.glass::before{content:none}
   .card:hover{transform:translateY(-6px) scale(1.015);
     border-color:rgba(200,232,255,.7);
     box-shadow:0 0 0 1px rgba(159,212,255,.4), 0 44px 90px -30px rgba(1,10,26,.98),
@@ -210,8 +216,9 @@
   .card .num{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:12px;
     letter-spacing:.24em;color:var(--cy-400);margin-bottom:14px}
   .card h3{font-family:'Space Grotesk',sans-serif;font-weight:600;
-    font-size:clamp(21px,2.05vw,32px);line-height:1.2;letter-spacing:-.02em;margin:0}
-  .card h3 b{color:var(--bad);font-weight:700;font-size:1.14em;
+    width:100%;font-size:clamp(38px,3.6vw,64px);line-height:1.06;
+    letter-spacing:-.035em;text-align:center;text-wrap:balance;margin:0}
+  .card h3 b{color:var(--bad);font-weight:700;font-size:1.08em;
     text-shadow:0 0 26px rgba(179,20,20,.85)}
   .card p{color:var(--dim);font-size:14px;line-height:1.68}
   .card p strong{color:var(--ink);font-weight:500}
@@ -241,10 +248,24 @@
   .beat.glass::before{content:none}
   .beat h3{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(26px,3.1vw,46px);
     letter-spacing:-.035em;line-height:1.04;margin:0}
+  .beat h3 .camera-id{display:block;margin-bottom:12px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;
+    line-height:1;letter-spacing:.18em;text-transform:uppercase;color:var(--cy-300)}
   .beat h3 em{font-style:normal;background:linear-gradient(120deg,var(--cy-300),var(--vi-400));
     -webkit-background-clip:text;background-clip:text;color:transparent}
+  .beat h3 .alert{color:var(--good);font-weight:700;
+    text-shadow:0 0 24px rgba(52,211,153,.55)}
   .beat p{color:var(--dim);font-size:15px;line-height:1.7}
   .beat p strong{color:var(--ink);font-weight:500}
+  .target-reticle{pointer-events:none;opacity:0}
+  .target-reticle circle,.target-reticle line{fill:none;stroke:#D91F26;
+    vector-effect:non-scaling-stroke;filter:drop-shadow(0 0 5px rgba(217,31,38,.8))}
+  .target-reticle .outer{stroke-width:2.6;stroke-dasharray:15 9;
+    transform-box:fill-box;transform-origin:center;animation:target-spin 4s linear infinite}
+  .target-reticle .inner{stroke-width:1.5;stroke-dasharray:3 5;
+    transform-box:fill-box;transform-origin:center;animation:target-spin 2.4s linear infinite reverse}
+  .target-reticle line{stroke-width:2.5}
+  @keyframes target-spin{to{transform:rotate(360deg)}}
   .clock{position:absolute;right:6vw;top:88px;text-align:right;z-index:3;
     padding:16px 26px;background:rgba(3,22,46,.58);border:1px solid rgba(200,232,255,.26);
     border-radius:24px;
@@ -252,6 +273,47 @@
   .clock .t{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(24px,3.1vw,48px);font-variant-numeric:tabular-nums;
     letter-spacing:-.04em;line-height:1;color:var(--ink)}
   .clock .l{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-top:8px}
+
+  /* ══════════ capstone ══════════ */
+  .capstone{position:absolute;inset:0;z-index:8;padding:62px 6vw;
+    display:grid;grid-template-columns:minmax(0,1.12fr) minmax(360px,.88fr);
+    align-items:center;gap:5.5vw;opacity:0;pointer-events:none;
+    transform:scale(.965);transform-origin:center}
+  .capstone-copy{max-width:760px;align-self:center;text-align:left}
+  .capstone h2{font-family:'Space Grotesk',sans-serif;font-size:clamp(42px,5.25vw,82px);
+    font-weight:700;line-height:.96;letter-spacing:-.052em;margin:0}
+  .capstone h2 em{font-style:normal;background:linear-gradient(110deg,var(--cy-100),var(--cy-300) 44%,var(--vi-400));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .loop-system{position:relative;width:min(38vw,500px);aspect-ratio:1;justify-self:end}
+  .loop-orbit{position:absolute;inset:0;width:100%;height:100%;overflow:visible;
+    filter:drop-shadow(0 0 18px rgba(42,155,238,.24))}
+  .loop-track{fill:none;stroke:rgba(183,224,255,.24);stroke-width:2}
+  .loop-signal{fill:none;stroke:url(#loopSignal);stroke-width:5;stroke-linecap:round;
+    stroke-dasharray:54 1108;transform-origin:250px 250px;animation:loop-signal 5s linear infinite}
+  @keyframes loop-signal{to{transform:rotate(360deg)}}
+  .loop-core{position:absolute;left:50%;top:50%;width:42%;aspect-ratio:1;
+    transform:translate(-50%,-50%);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;border-radius:50%;
+    background:linear-gradient(145deg,rgba(3,22,46,.86),rgba(8,58,105,.72));
+    border:1px solid rgba(200,232,255,.38);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.24),0 28px 70px -28px rgba(0,0,0,.9)}
+  .loop-core svg{width:52%;height:auto;margin-bottom:10px;
+    filter:drop-shadow(0 0 12px rgba(127,196,255,.42))}
+  .loop-core b{font-family:'Space Grotesk',sans-serif;font-size:clamp(17px,1.5vw,24px);
+    letter-spacing:-.025em}
+  .loop-core span{margin-top:5px;font-family:'JetBrains Mono',monospace;
+    font-size:8px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--cy-300)}
+  .loop-step{position:absolute;min-width:126px;padding:13px 15px;border-radius:16px;
+    background:rgba(3,22,46,.78);border:1px solid rgba(200,232,255,.32);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 18px 42px -24px rgba(0,0,0,.95);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+  .loop-step small{display:block;margin-bottom:5px;font-family:'JetBrains Mono',monospace;
+    font-size:8px;font-weight:700;letter-spacing:.15em;color:var(--cy-400)}
+  .loop-step b{font-family:'Space Grotesk',sans-serif;font-size:clamp(16px,1.35vw,21px)}
+  .loop-step.s1{left:50%;top:0;transform:translateX(-50%)}
+  .loop-step.s2{right:0;top:50%;transform:translateY(-50%)}
+  .loop-step.s3{left:50%;bottom:0;transform:translateX(-50%)}
+  .loop-step.s4{left:0;top:50%;transform:translateY(-50%)}
 
   /* ══════════ gallery ══════════ */
   .gal-frame{position:relative;height:100vh}
@@ -354,13 +416,21 @@
     .zoom{transform:none !important;height:auto;width:88vw}
     .gal-frame{height:auto} .act{height:auto !important}
     .pin{position:relative;height:auto;padding:12vh 6vw}
-    .blob,.curtain span,.curtain i,.w.hot > i{animation:none !important}
+    .blob,.curtain span,.curtain i,.w.hot > i,.mark .pupil,
+    .target-reticle .outer,.target-reticle .inner,.loop-signal{animation:none !important}
   }
   @media (max-width:900px){
     .cards,.mkt{grid-template-columns:1fr;flex-direction:column}
     .zoom{flex-direction:column;align-items:flex-start;gap:20px;height:76vh;overflow-y:auto}
     .zoom .vis{width:100%}
     .beat{max-width:none;right:6vw;top:auto;bottom:26vh;transform:none}
+    .capstone{grid-template-columns:1fr;padding:68px 7vw 24px;gap:16px;
+      align-content:center;text-align:left;overflow-y:auto}
+    .capstone-copy{max-width:none;transform:none}
+    .capstone h2{font-size:clamp(34px,8vw,52px)}
+    .loop-system{width:min(62vw,300px);justify-self:center}
+    .loop-step{min-width:96px;padding:9px 11px}
+    .loop-step b{font-size:14px}
   }
 </style>
 </head>
@@ -377,7 +447,20 @@
   <span class="fc tl"></span><span class="fc tr"></span><span class="fc bl"></span><span class="fc br"></span>
 </div>
 
-<div class="mark">Clar<span>ity</span></div>
+<div class="mark" role="img" aria-label="Clarity">
+  <svg viewBox="0 0 120 64" aria-hidden="true">
+    <defs>
+      <linearGradient id="markEye" x1="8" y1="8" x2="112" y2="58" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#EAF6FF"/>
+        <stop offset=".48" stop-color="#B7E0FF"/>
+        <stop offset="1" stop-color="#2A9BEE"/>
+      </linearGradient>
+    </defs>
+    <path d="M6 32C21 13 40 5 60 5s39 8 54 27C99 51 80 59 60 59S21 51 6 32Z"
+      fill="none" stroke="url(#markEye)" stroke-width="6" stroke-linejoin="round"/>
+    <circle class="pupil" cx="60" cy="32" r="10" fill="url(#markEye)"/>
+  </svg>
+</div>
 
 <!-- ═══════ 0 · TITLE ═══════ -->
 <section class="act" id="act-title" style="height:220vh">
@@ -391,13 +474,12 @@
 <!-- ═══════ 1 · HERO ═══════ -->
 <section class="act" id="act-hero" style="height:300vh">
   <div class="pin">
-    <div class="sr-only">A breath of relief for your city</div>
+    <div class="sr-only">No crime left unsolved</div>
     <div class="line hero-type" aria-hidden="true">
-      <span class="w"><i>A</i></span><span class="w"><i>breath</i></span>
-      <span class="w hollow"><i>of</i></span><span class="w hot"><i>relief</i></span>
+      <span class="w"><i>No</i></span><span class="w hot"><i>crime</i></span>
     </div>
     <div class="line hero-type" aria-hidden="true">
-      <span class="w"><i>for</i></span><span class="w"><i>your</i></span><span class="w hot"><i>city</i></span>
+      <span class="w"><i>left</i></span><span class="w hot"><i>unsolved.</i></span>
     </div>
     <p class="lede" data-fade>
       <strong>Clarity turns a city's cameras into one coordinated tracking mechanism.</strong>
@@ -415,9 +497,9 @@
       <span class="w"><i>The</i></span><span class="w hollow"><i>response</i></span><span class="w"><i>is</i></span><span class="w hot"><i>not.</i></span>
     </div>
     <div class="cards">
-      <div class="card glass" data-fade><h3>The worst happened suddenly</h3></div>
-      <div class="card glass" data-fade><h3>In the chaos, shock breeds panic</h3></div>
-      <div class="card glass" data-fade><h3>The first response is <b>delayed</b></h3></div>
+      <div class="card glass" data-fade><h3>The worst happened suddenly.</h3></div>
+      <div class="card glass" data-fade><h3>In the chaos, shock breeds panic.</h3></div>
+      <div class="card glass" data-fade><h3>The first response is <b>delayed</b>.</h3></div>
     </div>
   </div>
 </section>
@@ -449,119 +531,37 @@
       <div class="l">Elapsed <span data-elapsed>0:00</span></div>
     </div>
 
-<div class="v" data-frontier>0</div></div>
-      <div><div class="k">Confidence</div><div class="v" data-conf>—</div></div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════ 4 · HOW IT WORKS ═══════ -->
-<section class="act" id="act-how" style="height:600vh">
-  <div class="pin" style="padding:0">
-    <div class="gal-frame">
-      <div class="slide" data-slide data-accent="34,211,238">
-        <div class="zoom"><span class="sweep"></span>
-          <div class="txt"><h2>Describe them.<br><em>We search.</em></h2>
-            <p>Where they were last seen, when, what they were wearing, how they
-            travel. No photo, no ID, <strong>no biometrics</strong>. That is the
-            whole interface.</p></div>
-          <div class="vis"><div class="mock">
-            <div class="bar"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-            <div class="field"><label>Point last seen</label><div class="input">Caltrain, 4th &amp; King</div></div>
-            <div class="field"><label>Time last seen</label><div class="input">14:32 &middot; 6 minutes ago</div></div>
-            <div class="field"><label>Description</label><div class="input">"Red jacket, blue duffel, grey cap"</div></div>
-            <div class="field"><label>Travels by</label><div class="input ph">On foot &middot; transit</div></div>
-            <div class="go">Start search</div>
-          </div></div>
-        </div>
+    <div class="capstone" data-capstone>
+      <div class="capstone-copy">
+        <h2 data-cap-reveal>The first camera network that <em>closes the loop.</em></h2>
       </div>
-      <div class="slide" data-slide data-accent="103,232,249">
-        <div class="zoom"><span class="sweep"></span>
-          <div class="txt"><h2>Every edge is<br><em>a travel time.</em></h2>
-            <p>Cameras are nodes. An edge doesn't mean "these are near each other",
-            it means <strong>a person leaving here can be there in four minutes</strong>.
-            The map stops being a picture and becomes the algorithm.</p></div>
-          <div class="vis"><div class="stepbig">1</div>
-            <div class="steplist"><div class="on">Graph</div><div>Cone</div><div>Handoff</div><div>Re-bloom</div></div>
-          </div>
-        </div>
-      </div>
-      <div class="slide" data-slide data-accent="139,124,255">
-        <div class="zoom"><span class="sweep"></span>
-          <div class="txt"><h2>The alert is<br><em>a walker.</em></h2>
-            <p>It spawns at the point last seen and expands only along edges it
-            could have covered in the elapsed time. A camera nine minutes out
-            <strong>isn't watching yet</strong>. It starts at t+9.</p></div>
-          <div class="vis"><div class="code"><span class="c"># the alert is not a message. it is a walker.</span>
-<span class="k">walker</span> Bolo {
-    <span class="k">has</span> description: <span class="s">str</span>;
-    <span class="k">has</span> origin_ts: <span class="s">int</span>;
-    <span class="k">has</span> trail: <span class="s">list</span>;
 
-    <span class="k">can</span> hunt <span class="k">with</span> Camera entry {
-        hit = watch(here.feed, self.description, self.trail);
-        <span class="k">if</span> hit.matched {
-            self.trail.append(here);
-            self.origin_ts = hit.ts;   <span class="c"># re-bloom</span>
-        }
-        <span class="k">visit</span> [--&gt;](?travel_s &lt;= elapsed(self.origin_ts));
-    }
-}</div></div>
+      <div class="loop-system" data-cap-reveal aria-label="Closed response loop: classify, trace, track, identify">
+        <svg class="loop-orbit" viewBox="0 0 500 500" aria-hidden="true">
+          <defs>
+            <linearGradient id="loopSignal" x1="80" y1="80" x2="420" y2="420">
+              <stop offset="0" stop-color="#34D399"/>
+              <stop offset=".52" stop-color="#B7E0FF"/>
+              <stop offset="1" stop-color="#2A9BEE"/>
+            </linearGradient>
+          </defs>
+          <circle class="loop-track" cx="250" cy="250" r="185"></circle>
+          <circle class="loop-signal" cx="250" cy="250" r="185"></circle>
+        </svg>
+        <div class="loop-core">
+          <svg viewBox="0 0 120 64" aria-hidden="true">
+            <path d="M6 32C21 13 40 5 60 5s39 8 54 27C99 51 80 59 60 59S21 51 6 32Z"
+              fill="none" stroke="#B7E0FF" stroke-width="6" stroke-linejoin="round"/>
+            <circle cx="60" cy="32" r="10" fill="#7FC4FF"/>
+          </svg>
+          <b>One city.</b>
+          <span>One network</span>
         </div>
+        <div class="loop-step s1"><small>01</small><b>Classify</b></div>
+        <div class="loop-step s2"><small>02</small><b>Trace</b></div>
+        <div class="loop-step s3"><small>03</small><b>Track</b></div>
+        <div class="loop-step s4"><small>04</small><b>Identify</b></div>
       </div>
-      <div class="slide" data-slide data-accent="255,92,168">
-        <div class="zoom"><span class="sweep"></span>
-          <div class="txt"><h2>On a hit,<br><em>it re-blooms.</em></h2>
-            <p>The walker relocates to that camera, resets its clock and expands
-            again from the new position. The confirmed path is written back into
-            the graph. On a full miss, confidence decays and the search
-            <strong>retires itself</strong>.</p></div>
-          <div class="vis"><div class="stepbig">4</div>
-            <div class="steplist"><div>Graph</div><div>Cone</div><div>Handoff</div><div class="on">Re-bloom</div></div>
-          </div>
-        </div>
-      </div>
-      <div class="gal-count"><b data-galnow>1</b> / 4</div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════ 5 · PRIVACY ═══════ -->
-<section class="act" id="act-privacy" style="height:420vh">
-  <div class="pin">
-    <div class="eyebrow" data-fade>Built to be questioned</div>
-    <div class="line act-type">
-      <span class="w"><i>No</i></span><span class="w hot"><i>faces.</i></span><span class="w"><i>Ever.</i></span>
-    </div>
-    <div class="mkt">
-      <div class="tier glass" data-fade><div class="lab">01</div>
-        <div class="fig">Descriptions, not identities</div>
-        <div class="who">The network only ever knows <strong>"red jacket, blue
-        duffel"</strong>. No face embeddings, no enrolment database, nothing that
-        can become a watchlist later. It cannot recognise anyone it wasn't told
-        to look for.</div></div>
-      <div class="tier glass" data-fade><div class="lab">02</div>
-        <div class="fig">Searches expire on their own</div>
-        <div class="who">Confidence decays with every frontier that comes back
-        empty. A search that stops finding anything <strong>retires itself</strong>
-        rather than running quietly forever.</div></div>
-      <div class="tier glass" data-fade><div class="lab">03</div>
-        <div class="fig">Every search leaves a trail</div>
-        <div class="who">The walker writes its own path into the graph, so there
-        is a permanent record of <strong>which cameras were activated, when, and
-        why</strong>. Auditable by construction, not by policy.</div></div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════ 6 · CLOSING ═══════ -->
-<section class="act" id="act-close" style="height:300vh">
-  <div class="pin">
-    <div class="closeMark" data-fade>Clar<span>ity</span></div>
-    <div class="closeSub" data-fade>Every camera, one search</div>
-    <div class="team" data-fade>
-      <div class="teamLab">Team</div>
-      <div class="teamRow"><span>Rameez</span><span>Soham</span><span>Prakhar</span><span>Wali</span></div>
     </div>
   </div>
 </section>
@@ -1061,6 +1061,16 @@ void main(){
     gNodes.appendChild(g);
     return {g:g, halo:halo, core:core, hit:hit};
   });
+  var targetReticle = document.createElementNS(SVGNS,'g');
+  targetReticle.setAttribute('class','target-reticle');
+  targetReticle.innerHTML =
+    '<circle class="outer" cx="0" cy="0" r="38"></circle>' +
+    '<circle class="inner" cx="0" cy="0" r="27"></circle>' +
+    '<line x1="-53" y1="0" x2="-23" y2="0"></line>' +
+    '<line x1="23" y1="0" x2="53" y2="0"></line>' +
+    '<line x1="0" y1="-53" x2="0" y2="-23"></line>' +
+    '<line x1="0" y1="23" x2="0" y2="53"></line>';
+  gNodes.appendChild(targetReticle);
   // one path drawn three times: a wide soft glow, the body, and a white core.
   // A single stroke cannot be both bright and thick without going muddy.
   var trailGlow = document.createElementNS(SVGNS,'path');
@@ -1082,13 +1092,17 @@ void main(){
   var TRAILSET = {};
   TRAIL.forEach(function(i){ TRAILSET[i] = 1; });
 
-  /* the four beats of the story */
+  /* one settled presentation stop for every confirmed camera handoff */
   var BEATS = [
-    {at:0.02, h:'Crime was detected<br><em>and classified.</em>'},
-    {at:0.24, h:'Suspect flees, but<br><em>direction is captured.</em>'},
-    {at:0.56, h:'Dispatch<br><em>is concurrent.</em>'},
-    {at:0.74, h:'It re-blooms<br><em>from the sighting.</em>'}
+    {at:0.06, camera:23, h:'Crime was detected<br><em>and classified.</em>'},
+    {at:0.22, camera:32, h:'Suspect flees, but<br><em>direction is captured.</em>'},
+    {at:0.56, camera:42, h:'Suspect is <strong class="alert">marked</strong>,<br><em>and dispatch is concurrent.</em>'}
   ];
+  // The final frame is the settled dispatch view. The shortened search act
+  // maps its physical end to this exact logical point in the simulation.
+  var SEARCH_END = 0.66;
+  var DISPATCH_STOP = 0.66;
+  var TIMER_STOP = 0.84;
   var BEAT_IN = 0.05, BEAT_OUT = 0.04;
   // Separated windows rather than an overlapping stagger. Each item finishes
   // before the next begins, which is what lets a single card own a press.
@@ -1100,8 +1114,7 @@ void main(){
 
   var stageEls = {
     clock:    document.querySelector('[data-clock]'),
-    elapsed:  document.querySelector('[data-elapsed]'),
-    dummy: null
+    elapsed:  document.querySelector('[data-elapsed]')
   };
 
   function two(n){ return (n<10?'0':'') + n; }
@@ -1110,16 +1123,19 @@ void main(){
   // 14:32:00 is the incident. Everything downstream is that plus elapsed.
   var INCIDENT = 14*3600 + 32*60;
   var clockBase = 0, clockAnchor = performance.now(), clockP = -1;
+  var clockComplete = false;
   function paintClock(sec){
     var t  = INCIDENT + sec;
     var hh = Math.floor(t/3600) % 24, mm = Math.floor(t/60) % 60, ss = Math.floor(t) % 60;
-    stageEls.clock.textContent   = two(hh) + ':' + two(mm) + ':' + two(ss);
+    stageEls.clock.textContent = two(hh) + ':' + two(mm) + ':' + two(ss);
     stageEls.elapsed.textContent = mmss(sec);
   }
   // its own timer, because render only runs on scroll and pointer events
   setInterval(function(){
     if(!stageEls.clock) return;
-    paintClock(clockBase + (performance.now() - clockAnchor)/1000);
+    paintClock(clockComplete
+      ? 3 * 60
+      : Math.min(3 * 60, clockBase + (performance.now() - clockAnchor)/1000));
   }, 200);
 
   var lastT1 = 0, lastT2 = -1;
@@ -1205,6 +1221,12 @@ void main(){
       le.style.opacity = (live ? 0.95 : 0.34) * df;
       le.style.strokeWidth = (live ? 2.4 : 0.9) * clamp(pf2(pa.f,pb.f),0.5,1.6);
     }
+    var targetPoint = PJ[HIT];
+    var targetIn = ease(seg(p,0.555,0.62));
+    targetReticle.setAttribute('transform',
+      'translate(' + targetPoint.x.toFixed(1) + ' ' + targetPoint.y.toFixed(1) + ') scale(' +
+      (mix(1.45,1,targetIn) * clamp(targetPoint.f,0.82,1.24)).toFixed(3) + ')');
+    targetReticle.style.opacity = targetIn;
     // the confirmed trail is reprojected too, or it would float free of the graph
     var td = TRAIL.map(function(i,k){
       return (k?'L':'M') + PJ[i].x.toFixed(1) + ' ' + PJ[i].y.toFixed(1);
@@ -1227,9 +1249,15 @@ void main(){
     // Scroll sets where in the story we are; the clock then runs on from
     // there in real seconds, so it behaves like a clock rather than a readout
     // that only moves when you press a key.
-    var elapsedSec = (phase2>0 ? 9*60 + phase2*11*60 : phase1*9*60);
+    // The full response cycle is three minutes from the first search frame to
+    // the final dispatch frame. Between slide changes the clock keeps ticking;
+    // once the response completes it holds at exactly 3:00.
+    var elapsedSec = (p / SEARCH_END) * (3 * 60);
     if(Math.abs(p - clockP) > 0.0004){
-      clockBase = elapsedSec; clockAnchor = performance.now(); clockP = p;
+      clockComplete = p >= SEARCH_END - 0.0004;
+      clockBase = clockComplete ? 3 * 60 : elapsedSec;
+      clockAnchor = performance.now();
+      clockP = p;
     }
 
     // beats
@@ -1258,6 +1286,12 @@ void main(){
      whether the frontier has reached it, and if not, when it will. */
   var probe = document.querySelector('[data-probe]');
   var stageEl = document.querySelector('[data-stage]');
+  var CAMERA_LABELS = {
+    23: 'Crime scene',
+    32: 'Detected, passing',
+    41: 'Detected, passing',
+    42: 'Currently tracked'
+  };
   function pad(n){ return (n<10?'0':'') + n; }
   nodeEls.forEach(function(el,i){
     el.hit.addEventListener('mouseenter', function(){
@@ -1265,9 +1299,11 @@ void main(){
       var on = d1 <= lastT1 || (lastT2 >= 0 && d2 <= lastT2);
       var eta = Math.max(0, Math.round((Math.min(d1, lastT2>=0?d2:Infinity) -
                                         Math.max(lastT1, lastT2)) / 2.4));
+      var cameraLabel = CAMERA_LABELS[i];
       probe.innerHTML =
         '<b>CAM-' + pad(i) + '</b>' +
-        (i === ORIGIN ? '<u>point last seen</u>'
+        (cameraLabel ? '<u>' + cameraLabel + '</u>'
+         : i === ORIGIN ? '<u>point last seen</u>'
          : on ? '<u>watching &middot; in frontier</u>'
          : '<u>reachable in ' + Math.floor(eta/60) + ':' + pad(eta%60) + '</u>');
       var r = el.core.getBoundingClientRect(), s = stageEl.getBoundingClientRect();
@@ -1291,6 +1327,9 @@ void main(){
     };
   });
   var galNow = document.querySelector('[data-galnow]');
+  var siteMark = document.querySelector('.mark');
+  var capstoneEl = document.querySelector('[data-capstone]');
+  var capstoneReveals = [].slice.call(document.querySelectorAll('[data-cap-reveal]'));
   var root = document.documentElement;
   var ticking = false, mx=0, my=0, tmx=0, tmy=0;
   var beams = {t:document.querySelector('.fb.t'), r:document.querySelector('.fb.r'),
@@ -1369,10 +1408,42 @@ void main(){
       }
 
       if(a.stage){
-        renderSearch(p);
+        var searchP = Math.min(p / DISPATCH_STOP, 1) * SEARCH_END;
+        renderSearch(searchP);
+        var timerT = ease(seg(p, DISPATCH_STOP + 0.015, TIMER_STOP - 0.02));
+        var capstoneT = ease(seg(p, TIMER_STOP + 0.015, 0.98));
         // the whole field drifts with the cursor, Apple-style parallax
         a.stage.style.transform =
-          'scale(' + mix(1.0,1.06,p) + ') translate3d(' + (mx*-16) + 'px,' + (my*-10) + 'px,0)';
+          'scale(' + mix(1.0,1.06,searchP) + ') translate3d(' + (mx*-16) + 'px,' + (my*-10) + 'px,0)';
+        a.stage.style.opacity = mix(1,0.18,timerT) * (1-capstoneT);
+        var clockBox = stageEls.clock.parentElement;
+        var boxW = clockBox.offsetWidth, boxH = clockBox.offsetHeight;
+        var startCenterX = window.innerWidth - window.innerWidth*0.06 - boxW/2;
+        var startCenterY = 88 + boxH/2;
+        var moveX = window.innerWidth/2 - startCenterX;
+        var moveY = window.innerHeight/2 - startCenterY;
+        var finalScale = Math.min(2.35,
+          window.innerWidth*0.78/boxW,
+          window.innerHeight*0.52/boxH);
+        clockBox.style.transform =
+          'translate(' + (moveX*timerT).toFixed(1) + 'px,' +
+          (moveY*timerT).toFixed(1) + 'px) scale(' +
+          (mix(1,finalScale,timerT) * mix(1,0.82,capstoneT)).toFixed(3) + ')';
+        clockBox.style.transformOrigin = 'center';
+        clockBox.style.opacity = 1-capstoneT;
+        beatEl.style.opacity = parseFloat(beatEl.style.opacity || 1) * (1-timerT);
+        targetReticle.style.opacity =
+          parseFloat(targetReticle.style.opacity || 0) * (1-timerT);
+        if(capstoneEl){
+          capstoneEl.style.opacity = capstoneT;
+          capstoneEl.style.transform = 'scale(' + mix(.965,1,capstoneT).toFixed(3) + ')';
+          capstoneReveals.forEach(function(el,i){
+            var revealT = ease(seg(capstoneT,i*0.08,0.48+i*0.08));
+            el.style.opacity = revealT;
+            el.style.transform = 'translateY(' + ((1-revealT)*24).toFixed(1) + 'px)';
+          });
+        }
+        if(siteMark) siteMark.style.opacity = clamp(1-timerT+capstoneT,0,1);
       }
 
       if(a.words.length){
@@ -1451,8 +1522,13 @@ void main(){
   // guessed, so a stop can never land inside a cross-fade.
   var SEARCH_STOPS = BEATS.map(function(b, i){
     var from = b.at + BEAT_IN;
-    var to   = (i+1 < BEATS.length ? BEATS[i+1].at : 1.04) - BEAT_OUT;
-    return {a:'act-search', p: from + (to-from)*0.55, of: b.label || ('beat '+(i+1))};
+    var to   = (i+1 < BEATS.length ? BEATS[i+1].at - BEAT_OUT : SEARCH_END);
+    var logicalP = from + (to-from)*0.55;
+    return {
+      a:'act-search',
+      p: (i+1 < BEATS.length ? logicalP / SEARCH_END : 1) * DISPATCH_STOP,
+      of: b.label || ('beat '+(i+1))
+    };
   });
 
   var STEPS = [
@@ -1462,14 +1538,9 @@ void main(){
     {a:'act-problem', p:0.625, of:'card one'},
     {a:'act-problem', p:0.745, of:'card two'},
     {a:'act-problem', p:0.93, of:'card three'},
-    SEARCH_STOPS[0], SEARCH_STOPS[1], SEARCH_STOPS[2], SEARCH_STOPS[3],
-    {a:'act-how',     p:0.125,of:'describe them'},
-    {a:'act-how',     p:0.375,of:'every edge is a travel time'},
-    {a:'act-how',     p:0.625,of:'the alert is a walker'},
-    {a:'act-how',     p:0.875,of:'on a hit it re-blooms'},
-    {a:'act-privacy', p:0.48, of:'headline, fully drawn'},
-    {a:'act-privacy', p:0.93, of:'all three commitments'},
-    {a:'act-close',   p:0.93, of:'wordmark, tagline and team'}
+    SEARCH_STOPS[0], SEARCH_STOPS[1], SEARCH_STOPS[2],
+    {a:'act-search', p:TIMER_STOP, of:'three-minute response hold'},
+    {a:'act-search', p:1, of:'closed-loop capstone'}
   ];
 
   var step = 0, tweening = null;
@@ -1509,9 +1580,25 @@ void main(){
 
   var NEXT = ['ArrowRight','ArrowDown','PageDown',' ','Enter'];
   var PREV = ['ArrowLeft','ArrowUp','PageUp','Backspace'];
+  function nearestStep(){
+    var y = window.pageYOffset, best = 0, bestDist = Infinity;
+    for(var i=0;i<STEPS.length;i++){
+      var d = Math.abs(stepY(i)-y);
+      if(d < bestDist){ bestDist=d; best=i; }
+    }
+    return best;
+  }
   document.addEventListener('keydown', function(e){
-    if(NEXT.indexOf(e.key) > -1){ e.preventDefault(); goTo(step+1); }
-    else if(PREV.indexOf(e.key) > -1){ e.preventDefault(); goTo(step-1); }
+    if(NEXT.indexOf(e.key) > -1){
+      e.preventDefault();
+      if(!tweening) step = nearestStep();
+      goTo(step+1);
+    }
+    else if(PREV.indexOf(e.key) > -1){
+      e.preventDefault();
+      if(!tweening) step = nearestStep();
+      goTo(step-1);
+    }
     else if(e.key === 'Home'){ e.preventDefault(); goTo(0); }
     else if(e.key === 'End'){ e.preventDefault(); goTo(STEPS.length-1); }
   });

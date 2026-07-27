@@ -41,10 +41,9 @@ arrival time. Scroll position is simply *elapsed time*, so the frame you see is
 the honest answer to "what does the network look like at t?" — the same question
 the real walker answers.
 
-Four beats: the search opens, the cone expands, a camera hits nine minutes out,
-and the walker re-blooms from the sighting while the confirmed trail draws
-itself back through the graph. Live readouts for cameras reached, frontier size
-and confidence.
+Three presentation stops follow CAM-23, CAM-32, and CAM-42 as the confirmed
+trail draws itself through the graph. A timer-only hold brings the completed
+three-minute response time to center stage, followed by a closed-loop capstone.
 
 The bloom is deliberately **linear, not eased** — a cone expands at a constant
 rate, and easing made the whole network light up in the first third.
@@ -56,10 +55,7 @@ rate, and easing made the whole network light up in the first third.
 | 0 · Title | 220vh | CLARITY resolves out of blur |
 | 1 · Hero | 300vh | "The search moves the way people do" |
 | 2 · Problem | 460vh | Alerts go out not outward · cameras never talk · area grows as t² |
-| 3 · **The search** | 900vh | The pinned graph, scrubbed by scroll |
-| 4 · How | 600vh | Four cards that scale toward you, including the walker source |
-| 5 · Privacy | 420vh | No faces · searches expire · every search leaves a trail |
-| 6 · Closing | 300vh | Wordmark, tagline, team |
+| 3 · **The search** | 900vh | The pinned graph, 3:00 timer hold, and closed-loop capstone |
 
 Everything is scroll-driven. Nothing is on a timer, so it plays forward and
 backward exactly as you scroll — which also means every frame is reachable for
