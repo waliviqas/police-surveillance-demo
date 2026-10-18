@@ -169,6 +169,8 @@
     filter:drop-shadow(0 0 26px rgba(34,211,238,.35))}
   @keyframes flow{to{background-position:250% 0}}
   .w.hollow > i{color:transparent;-webkit-text-stroke:1.4px rgba(103,232,249,.75)}
+  .w.bad > i{color:var(--bad)}
+  [data-intro]{position:absolute;inset:0;justify-content:center;pointer-events:none}
   .hero-type{font-size:clamp(38px,8vw,120px)}
   .act-type{font-size:clamp(30px,5.6vw,86px)}
   .eyebrow{display:inline-flex;align-items:center;gap:9px;align-self:flex-start;
@@ -221,12 +223,23 @@
   .card h3 b{color:var(--bad);font-weight:700;font-size:1.08em;
     text-shadow:0 0 26px rgba(179,20,20,.85)}
   .card p{color:var(--dim);font-size:14px;line-height:1.68}
+  .hood-list{list-style:none;margin:40px 0 0;padding:0;max-width:1000px}
+  .hood-list li{display:grid;grid-template-columns:190px 1fr;align-items:center;gap:24px;
+    padding:12px 0;border-top:1px solid var(--glass-line);opacity:0}
+  .hood-list li:last-child{border-bottom:1px solid var(--glass-line)}
+  .hood-role{display:flex;align-items:center;gap:12px;font-size:clamp(13px,1.25vw,18px);font-weight:600;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--cy-300)}
+  .hood-role::before{content:"";width:7px;height:7px;border-radius:50%;
+    background:rgb(var(--accent));box-shadow:0 0 12px rgb(var(--accent))}
+  .hood-model{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:clamp(20px,2.1vw,36px);
+    letter-spacing:-.03em;color:var(--ink)}
   .card p strong{color:var(--ink);font-weight:500}
+
 
   /* ══════════ THE SEARCH — the pinned centrepiece ══════════
      Apple pins the product and lets scroll drive it. Clarity's product is not
      an object, it is the search propagating, so that is what gets pinned. */
-  #act-search .pin{padding:0}
+  #act-search .pin,#act-loop .pin{padding:0}
   .stage{position:absolute;inset:0}
   .stage svg{position:absolute;inset:0;width:100%;height:100%}
   .stage{pointer-events:auto}
@@ -411,16 +424,18 @@
 
   @media (prefers-reduced-motion: reduce){
     .w > i{transform:none !important}
-    .lede,.eyebrow,.card,.mkt .tier,.team,.closeMark,.closeSub,.beat{opacity:1 !important;transform:none !important}
+    .lede,.eyebrow,.card,.mkt .tier,.team,.closeMark,.closeSub,.beat,.hood-list li{opacity:1 !important;transform:none !important}
     .slide{position:relative;opacity:1 !important;visibility:visible !important;height:auto;padding:8vh 0}
     .zoom{transform:none !important;height:auto;width:88vw}
     .gal-frame{height:auto} .act{height:auto !important}
     .pin{position:relative;height:auto;padding:12vh 6vw}
+    [data-intro]{display:none}
     .blob,.curtain span,.curtain i,.w.hot > i,.mark .pupil,
     .target-reticle .outer,.target-reticle .inner,.loop-signal{animation:none !important}
   }
   @media (max-width:900px){
     .cards,.mkt{grid-template-columns:1fr;flex-direction:column}
+    .hood-list li{grid-template-columns:1fr;gap:6px}
     .zoom{flex-direction:column;align-items:flex-start;gap:20px;height:76vh;overflow-y:auto}
     .zoom .vis{width:100%}
     .beat{max-width:none;right:6vw;top:auto;bottom:26vh;transform:none}
@@ -531,6 +546,57 @@
       <div class="l">Elapsed <span data-elapsed>0:00</span></div>
     </div>
 
+  </div>
+</section>
+
+<!-- ═══════ 2a · CUSTOMER ═══════ -->
+<section class="act" id="act-customer" data-extra style="height:300vh">
+  <div class="pin">
+    <div class="sr-only">Sold to police departments</div>
+    <div class="line hero-type" aria-hidden="true">
+      <span class="w"><i>Sold</i></span><span class="w"><i>to</i></span><span class="w"><i>police</i></span>
+    </div>
+    <div class="line hero-type" aria-hidden="true">
+      <span class="w hot"><i>departments.</i></span>
+    </div>
+    <p class="lede" data-fade style="max-width:none">
+      <strong>Our customer is the police department. Their crime center analysts are the ones who use it.</strong>
+    </p>
+  </div>
+</section>
+
+<!-- ═══════ 2c · PRIVACY ═══════ -->
+<section class="act" id="act-privacy" data-extra style="height:300vh">
+  <div class="pin">
+    <div class="line hero-type" data-intro aria-hidden="true">Privacy?</div>
+    <div class="line act-type">
+      <span class="w"><i>Our</i></span><span class="w"><i>video</i></span><span class="w bad"><i>never</i></span><span class="w"><i>leaves</i></span><span class="w"><i>the</i></span><span class="w hollow"><i>building.</i></span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ 2d · UNDER THE HOOD ═══════ -->
+<section class="act" id="act-hood" data-extra style="height:460vh">
+  <div class="pin">
+    <div class="line act-type">
+      <span class="w"><i>Three</i></span><span class="w hot"><i>small</i></span><span class="w"><i>models.</i></span>
+    </div>
+    <div class="line act-type">
+      <span class="w"><i>One</i></span><span class="w hollow"><i>GPU.</i></span>
+    </div>
+    <ul class="hood-list">
+      <li data-fade><span class="hood-role">Spotter</span><span class="hood-model">Qwen3-VL-2B, fine-tuned by us</span></li>
+      <li data-fade><span class="hood-role">Checker</span><span class="hood-model">NVIDIA Nemotron Nano 12B v2 VL</span></li>
+      <li data-fade><span class="hood-role">Dispatcher</span><span class="hood-model">NVIDIA Nemotron Nano 9B v2</span></li>
+      <li data-fade><span class="hood-role">Serving</span><span class="hood-model">vLLM, all three on one GPU</span></li>
+      <li data-fade><span class="hood-role">Score</span><span class="hood-model">NeMo Gym: right calls 67% → 89%</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══════ 4 · THE LOOP (capstone, its own section) ═══════ -->
+<section class="act" id="act-loop" data-extra style="height:240vh">
+  <div class="pin">
     <div class="capstone" data-capstone>
       <div class="capstone-copy">
         <h2 data-cap-reveal>The first camera network that <em>closes the loop.</em></h2>
@@ -1323,12 +1389,15 @@ void main(){
       slides: [].slice.call(el.querySelectorAll('[data-slide]')),
       title:  el.querySelector('[data-title]'),
       sub:    el.querySelector('[data-sub]'),
+      intro:  el.querySelector('[data-intro]'),
       stage:  el.querySelector('[data-stage]')
     };
   });
+  var extraActs = [].slice.call(document.querySelectorAll('[data-extra]'));
   var galNow = document.querySelector('[data-galnow]');
   var siteMark = document.querySelector('.mark');
   var capstoneEl = document.querySelector('[data-capstone]');
+  var loopEl = document.getElementById('act-loop');
   var capstoneReveals = [].slice.call(document.querySelectorAll('[data-cap-reveal]'));
   var root = document.documentElement;
   var ticking = false, mx=0, my=0, tmx=0, tmy=0;
@@ -1357,7 +1426,15 @@ void main(){
     root.style.setProperty('--mx', mx.toFixed(3));
     root.style.setProperty('--my', my.toFixed(3));
     var docH = document.documentElement.scrollHeight - vh;
-    var gp = docH>0 ? window.pageYOffset/docH : 0;
+    // The added slides (data-extra) sit outside the colour walk: they hold the colour the deck had where they
+    // were inserted, and every original slide keeps exactly the colour it had before they existed.
+    var extraH = 0, extraSeen = 0;
+    extraActs.forEach(function(el){
+      var h = el.offsetHeight;
+      extraH += h;
+      extraSeen += clamp(window.pageYOffset - el.offsetTop, 0, h);
+    });
+    var gp = docH-extraH>0 ? clamp((window.pageYOffset-extraSeen)/(docH-extraH), 0, 1) : 0;
 
     // The accent walks cyan -> violet -> pink across the deck, and everything
     // keyed to it walks with it: blobs, halo, frame beams, glass rims, the
@@ -1411,7 +1488,9 @@ void main(){
         var searchP = Math.min(p / DISPATCH_STOP, 1) * SEARCH_END;
         renderSearch(searchP);
         var timerT = ease(seg(p, DISPATCH_STOP + 0.015, TIMER_STOP - 0.02));
-        var capstoneT = ease(seg(p, TIMER_STOP + 0.015, 0.98));
+        var lspan = loopEl ? loopEl.offsetHeight - vh : 0;
+        var lp = lspan>0 ? clamp((window.pageYOffset - loopEl.offsetTop)/lspan, 0, 1) : 0;
+        var capstoneT = ease(seg(lp, 0.02, 0.6));
         // the whole field drifts with the cursor, Apple-style parallax
         a.stage.style.transform =
           'scale(' + mix(1.0,1.06,searchP) + ') translate3d(' + (mx*-16) + 'px,' + (my*-10) + 'px,0)';
@@ -1443,13 +1522,19 @@ void main(){
             el.style.transform = 'translateY(' + ((1-revealT)*24).toFixed(1) + 'px)';
           });
         }
-        if(siteMark) siteMark.style.opacity = clamp(1-timerT+capstoneT,0,1);
+        if(siteMark) siteMark.style.opacity = clamp(1-timerT+capstoneT+(p>=1?1:0),0,1);
       }
 
+      if(a.intro){
+        var q = ease(seg(p, 0.08, 0.16));
+        a.intro.style.transform = 'scale(' + mix(1, 1.12, q) + ')';
+        a.intro.style.opacity = 1-q;
+      }
       if(a.words.length){
         var n = a.words.length;
+        var wp = a.intro ? seg(p, 0.18, 0.52)*0.46 : p;  // the intro has the screen first
         a.words.forEach(function(w,i){
-          var t = ease(seg(p, (i/n)*0.30, (i/n)*0.30 + 0.16));
+          var t = ease(seg(wp, (i/n)*0.30, (i/n)*0.30 + 0.16));
           w.style.transform = 'translateY(' + ((1-t)*110) + '%)';
         });
       }
@@ -1540,7 +1625,16 @@ void main(){
     {a:'act-problem', p:0.93, of:'card three'},
     SEARCH_STOPS[0], SEARCH_STOPS[1], SEARCH_STOPS[2],
     {a:'act-search', p:TIMER_STOP, of:'three-minute response hold'},
-    {a:'act-search', p:1, of:'closed-loop capstone'}
+    {a:'act-customer', p:0.88, of:'customer: headline and line'},
+    {a:'act-privacy', p:0.04, of:'privacy: question'},
+    {a:'act-privacy', p:0.6, of:'privacy: headline'},
+    {a:'act-hood', p:0.48, of:'under the hood: headline'},
+    {a:'act-hood', p:0.58, of:'under the hood: spotter'},
+    {a:'act-hood', p:0.65, of:'under the hood: checker'},
+    {a:'act-hood', p:0.72, of:'under the hood: dispatcher'},
+    {a:'act-hood', p:0.8, of:'under the hood: serving'},
+    {a:'act-hood', p:0.93, of:'under the hood: score'},
+    {a:'act-loop', p:0.75, of:'closed-loop capstone'}
   ];
 
   var step = 0, tweening = null;
