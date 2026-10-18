@@ -504,6 +504,57 @@
   </div>
 </section>
 
+<!-- ═══════ 2b · WHO IT'S FOR ═══════ -->
+<section class="act" id="act-who" style="height:460vh">
+  <div class="pin">
+    <div class="line act-type">
+      <span class="w"><i>Built</i></span><span class="w"><i>for</i></span><span class="w"><i>the</i></span><span class="w hot"><i>people</i></span>
+    </div>
+    <div class="line act-type">
+      <span class="w"><i>already</i></span><span class="w hollow"><i>watching</i></span><span class="w"><i>the</i></span><span class="w hot"><i>screens.</i></span>
+    </div>
+    <div class="cards">
+      <div class="card glass" data-fade><h3>Police crime centers.</h3></div>
+      <div class="card glass" data-fade><h3>Campuses and transit.</h3></div>
+      <div class="card glass" data-fade><h3>On the cameras they <b>already own</b>.</h3></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ 2c · PRIVACY ═══════ -->
+<section class="act" id="act-privacy" style="height:460vh">
+  <div class="pin">
+    <div class="line act-type">
+      <span class="w"><i>Video</i></span><span class="w hot"><i>never</i></span><span class="w"><i>leaves</i></span>
+    </div>
+    <div class="line act-type">
+      <span class="w"><i>the</i></span><span class="w hollow"><i>building.</i></span>
+    </div>
+    <div class="cards">
+      <div class="card glass" data-fade><h3>Only <b>words</b> move between cameras.</h3></div>
+      <div class="card glass" data-fade><h3>Runs on their own hardware. No cloud.</h3></div>
+      <div class="card glass" data-fade><h3>A person approves <b>every</b> alert.</h3></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ 2d · UNDER THE HOOD ═══════ -->
+<section class="act" id="act-hood" style="height:460vh">
+  <div class="pin">
+    <div class="line act-type">
+      <span class="w"><i>Three</i></span><span class="w hot"><i>small</i></span><span class="w"><i>models.</i></span>
+    </div>
+    <div class="line act-type">
+      <span class="w"><i>One</i></span><span class="w hollow"><i>GPU.</i></span>
+    </div>
+    <div class="cards">
+      <div class="card glass" data-fade><h3>Our fine-tuned <b>Qwen 2B</b> spots the crime.</h3></div>
+      <div class="card glass" data-fade><h3>NVIDIA <b>Nemotron</b> describes the suspect and dispatches.</h3></div>
+      <div class="card glass" data-fade><h3>Served on <b>vLLM</b>. Scored in <b>NeMo Gym</b>: right calls 67% → 89%.</h3></div>
+    </div>
+  </div>
+</section>
+
 <!-- ═══════ 3 · THE SEARCH (pinned centrepiece) ═══════ -->
 <section class="act" id="act-search" style="height:900vh">
   <div class="pin">
@@ -1538,6 +1589,18 @@ void main(){
     {a:'act-problem', p:0.625, of:'card one'},
     {a:'act-problem', p:0.745, of:'card two'},
     {a:'act-problem', p:0.93, of:'card three'},
+    {a:'act-who', p:0.48, of:'who it's for: headline'},
+    {a:'act-who', p:0.625, of:'who it's for: card one'},
+    {a:'act-who', p:0.745, of:'who it's for: card two'},
+    {a:'act-who', p:0.93, of:'who it's for: card three'},
+    {a:'act-privacy', p:0.48, of:'privacy: headline'},
+    {a:'act-privacy', p:0.625, of:'privacy: card one'},
+    {a:'act-privacy', p:0.745, of:'privacy: card two'},
+    {a:'act-privacy', p:0.93, of:'privacy: card three'},
+    {a:'act-hood', p:0.48, of:'under the hood: headline'},
+    {a:'act-hood', p:0.625, of:'under the hood: card one'},
+    {a:'act-hood', p:0.745, of:'under the hood: card two'},
+    {a:'act-hood', p:0.93, of:'under the hood: card three'},
     SEARCH_STOPS[0], SEARCH_STOPS[1], SEARCH_STOPS[2],
     {a:'act-search', p:TIMER_STOP, of:'three-minute response hold'},
     {a:'act-search', p:1, of:'closed-loop capstone'}
